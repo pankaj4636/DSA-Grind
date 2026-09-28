@@ -1127,6 +1127,7 @@ button {
    border-radius: inherit;
    background: linear-gradient(138deg, var(--accent-2), color-mix(in srgb, var(--accent) 22%, transparent) 34%, transparent 56%, color-mix(in srgb, var(--accent-2) 60%, transparent));
    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
    -webkit-mask-composite: xor;
    mask-composite: exclude;
    opacity: .75;
@@ -1259,6 +1260,7 @@ button {
    line-height: 1.55;
    display: -webkit-box;
    -webkit-line-clamp: 2;
+   line-clamp: 2;
    -webkit-box-orient: vertical;
    overflow: hidden;
 }
@@ -2650,6 +2652,7 @@ button {
    padding: 1px;
    background: linear-gradient(180deg, color-mix(in srgb, var(--violet) 35%, transparent), transparent 55%);
    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
    -webkit-mask-composite: xor;
    mask-composite: exclude;
    pointer-events: none;
