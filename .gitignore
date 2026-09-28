@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# local agent/editor config
+.claude/
+.agent-cache/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
