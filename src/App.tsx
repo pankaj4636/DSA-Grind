@@ -7,7 +7,9 @@ import {
 } from 'lucide-react'
 import { loadSheets, TOPIC_ORDER } from './lib/parseSheets'
 import type { Problem, ProgressState, Sheet } from './types'
-
+import { useAuth } from './lib/AuthContext'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from './lib/firebase'
 const sheets = loadSheets()
 const STORAGE_KEY = 'algovault-progress-v1'
 
@@ -37,6 +39,7 @@ function migrateProgress(raw: unknown): ProgressState {
 }
 
 function useProgress() {
+  const { user } = useAuth();
   const [state, setState] = useState<ProgressState>(() => {
     try {
       return migrateProgress(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'))
@@ -45,7 +48,41 @@ function useProgress() {
     }
   })
 
-  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(state)), [state])
+  useEffect(() => {
+    if (!user) return;
+    const fetchProgress = async () => {
+      try {
+        const docRef = doc(db, 'progress', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const cloudData = docSnap.data() as ProgressState;
+          setState((local) => {
+            const mergedCompleted = Array.from(new Set([...local.completed, ...(cloudData.completed || [])]));
+            const mergedBookmarked = Array.from(new Set([...local.bookmarked, ...(cloudData.bookmarked || [])]));
+            return { completed: mergedCompleted, bookmarked: mergedBookmarked };
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching progress:", e);
+      }
+    };
+    fetchProgress();
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (user) {
+      const syncToCloud = async () => {
+        try {
+          await setDoc(doc(db, 'progress', user.uid), state);
+        } catch (e) {
+          console.error("Error saving progress to cloud:", e);
+        }
+      };
+      syncToCloud();
+    }
+  }, [state, user]);
+
   const toggle = (key: keyof ProgressState, id: string) => setState((current) => ({
     ...current,
     [key]: current[key].includes(id) ? current[key].filter((item) => item !== id) : [...current[key], id],
@@ -83,6 +120,7 @@ function GithubMark({ size = 16 }: { size?: number }) {
 }
 
 function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: string; setTheme: (theme: string) => void; onMenu: () => void; view: View; navigate: (view: NavTarget) => void; solved: number }) {
+  const { user, loginWithGoogle, logout } = useAuth();
   // The bar sits flush with the page until you scroll, then earns its hairline
   // and shadow — so it reads as chrome lifting over the content, not a box.
   const [scrolled, setScrolled] = useState(false)
@@ -104,6 +142,16 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
         <button className={view === 'progress' ? 'active' : ''} onClick={() => navigate('progress')}>Progress</button>
       </nav>
       <div className="top-actions">
+        {user ? (
+          <button className="solved-chip" onClick={logout} title="Sign out" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <img src={user.photoURL || ''} alt="avatar" style={{ width: 16, height: 16, borderRadius: '50%' }} />
+            <strong>{user.displayName?.split(' ')[0]}</strong>
+          </button>
+        ) : (
+          <button className="solved-chip" onClick={loginWithGoogle} title="Sign in" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <strong>Sign In</strong>
+          </button>
+        )}
         <button className="solved-chip desktop-only" onClick={() => navigate('progress')} title="View your progress">
           <CheckCircle2 size={13} strokeWidth={2.6} />
           <strong>{solved}</strong> solved
