@@ -5,7 +5,7 @@ sharpens the learning material. **You do not need to be a React developer to con
 value lives in plain Markdown.
 
 - 🔗 **Live app:** [dsa.nextjoblist.com](https://dsa.nextjoblist.com/)
-- 🐛 **Found a bug or a dead LeetCode link?** [Open an issue](https://github.com/sumitsingh4411/faang/issues/new) — that alone is a real contribution.
+- 🐛 **Found a bug or a dead LeetCode link?** [Open an issue](https://github.com/pankaj4636/DSA-Grind/issues/new) — that alone is a real contribution.
 
 ---
 
@@ -13,7 +13,7 @@ value lives in plain Markdown.
 
 | Contribution | Skill needed | Where |
 | --- | --- | --- |
-| Report a wrong/dead LeetCode link | none | [Issues](https://github.com/sumitsingh4411/faang/issues) |
+| Report a wrong/dead LeetCode link | none | [Issues](https://github.com/pankaj4636/DSA-Grind/issues) |
 | Fix a typo or a broken link | Markdown | `content/*.md`, `README.md` |
 | Correct a difficulty, company, or pattern tag | Markdown | `content/*.md` |
 | Add problems to an existing sheet | Markdown | `content/<sheet>.md` |
@@ -26,8 +26,8 @@ value lives in plain Markdown.
 ## Run it locally
 
 ```bash
-git clone https://github.com/sumitsingh4411/faang.git
-cd faang
+git clone https://github.com/pankaj4636/DSA-Grind.git
+cd DSA-Grind
 npm install
 npm run dev          # http://localhost:5173
 ```
@@ -116,3 +116,7 @@ By contributing, you agree that your contributions are licensed under the [MIT L
 that you will uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Thanks for making interview prep better for the next person. ⭐
+
+---
+
+**Maintainer:** pankaj4636 (GitHub ID: [pankaj4636](https://github.com/pankaj4636))
