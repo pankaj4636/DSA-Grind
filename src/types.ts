@@ -27,4 +27,5 @@ export interface Sheet {
 export interface ProgressState {
   completed: string[]
   bookmarked: string[]
+  notes: Record<string, string>
 }

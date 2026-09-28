@@ -3,12 +3,12 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, Award, BarChart3, Bookmark, BookOpen, BrainCircuit,
   BriefcaseBusiness, Building2, CalendarDays, Check, CheckCircle2, ChevronDown, Circle, Clock3,
   Code2, Flame, Grid2X2, Layers3, LayoutGrid, ListChecks, Menu, Moon, Search, Settings2, Sparkles,
-  Star, Sun, Target, TrendingUp, Trophy, X, Zap,
+  Star, Sun, Target, TrendingUp, Trophy, X, Zap, FileText, Save,
 } from 'lucide-react'
 import { loadSheets, TOPIC_ORDER } from './lib/parseSheets'
 import type { Problem, ProgressState, Sheet } from './types'
 import { useAuth } from './lib/AuthContext'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { db } from './lib/firebase'
 const sheets = loadSheets()
 const STORAGE_KEY = 'algovault-progress-v1'
@@ -21,8 +21,8 @@ const iconMap = {
 }
 
 const difficultyRank = { Easy: 0, Medium: 1, Hard: 2 }
-type View = 'home' | 'sheet' | 'bookmarks' | 'progress' | 'all'
-type NavTarget = 'home' | 'bookmarks' | 'progress' | 'all'
+type View = 'home' | 'sheet' | 'bookmarks' | 'progress' | 'all' | 'leaderboard'
+type NavTarget = 'home' | 'bookmarks' | 'progress' | 'all' | 'leaderboard'
 
 // Rewrite any legacy sheet-scoped ids ("slug:title") to the canonical
 // per-question id and drop duplicates, so old saved progress carries over and
@@ -35,7 +35,13 @@ function migrateProgress(raw: unknown): ProgressState {
     legacyToCanonical[legacy] = problem.id
   }))
   const remap = (ids?: string[]) => Array.from(new Set((ids ?? []).map((id) => legacyToCanonical[id] ?? id)))
-  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked) }
+  const remapNotes = (notes?: Record<string, string>) => {
+    if (!notes) return {}
+    const newNotes: Record<string, string> = {}
+    Object.entries(notes).forEach(([id, text]) => { newNotes[legacyToCanonical[id] ?? id] = text })
+    return newNotes
+  }
+  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes) }
 }
 
 function useProgress() {
@@ -44,7 +50,7 @@ function useProgress() {
     try {
       return migrateProgress(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'))
     } catch {
-      return { completed: [], bookmarked: [] }
+      return { completed: [], bookmarked: [], notes: {} }
     }
   })
 
@@ -59,7 +65,8 @@ function useProgress() {
           setState((local) => {
             const mergedCompleted = Array.from(new Set([...local.completed, ...(cloudData.completed || [])]));
             const mergedBookmarked = Array.from(new Set([...local.bookmarked, ...(cloudData.bookmarked || [])]));
-            return { completed: mergedCompleted, bookmarked: mergedBookmarked };
+            const mergedNotes = { ...(local.notes || {}), ...(cloudData.notes || {}) };
+            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes };
           });
         }
       } catch (e) {
@@ -74,7 +81,12 @@ function useProgress() {
     if (user) {
       const syncToCloud = async () => {
         try {
-          await setDoc(doc(db, 'progress', user.uid), state);
+          await setDoc(doc(db, 'progress', user.uid), {
+            ...state,
+            displayName: user.displayName || 'Anonymous Developer',
+            photoURL: user.photoURL || '',
+            lastActive: new Date().toISOString(),
+          });
         } catch (e) {
           console.error("Error saving progress to cloud:", e);
         }
@@ -83,11 +95,15 @@ function useProgress() {
     }
   }, [state, user]);
 
-  const toggle = (key: keyof ProgressState, id: string) => setState((current) => ({
-    ...current,
-    [key]: current[key].includes(id) ? current[key].filter((item) => item !== id) : [...current[key], id],
-  }))
-  return { state, toggle }
+  const toggle = (key: keyof ProgressState, id: string) => {
+    if (key === 'notes') return;
+    setState((current) => ({
+      ...current,
+      [key]: (current[key] as string[]).includes(id) ? (current[key] as string[]).filter((item) => item !== id) : [...(current[key] as string[]), id],
+    }))
+  }
+  const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
+  return { state, toggle, saveNote }
 }
 
 function Logo({ onClick }: { onClick?: () => void }) {
@@ -139,6 +155,7 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
         <button className={view === 'home' ? 'active' : ''} onClick={() => navigate('home')}>Explore</button>
         <button onClick={() => { navigate('home'); setTimeout(() => document.getElementById('sheets')?.scrollIntoView(), 50) }}>Sheets</button>
         <button className={view === 'all' ? 'active' : ''} onClick={() => navigate('all')}>All Problems</button>
+        <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => navigate('leaderboard')}>Leaderboard</button>
         <button className={view === 'progress' ? 'active' : ''} onClick={() => navigate('progress')}>Progress</button>
       </nav>
       <div className="top-actions">
@@ -175,6 +192,7 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <button className={view === 'home' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('home')}><Grid2X2 size={18} /> Overview</button>
         <a className="nav-item" href="#sheets" onClick={close}><BookOpen size={18} /> Study sheets</a>
         <button className={view === 'bookmarks' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('bookmarks')}><Bookmark size={18} /> Bookmarks</button>
+        <button className={view === 'leaderboard' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('leaderboard')}><Trophy size={18} /> Leaderboard</button>
         <button className={view === 'progress' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('progress')}><BarChart3 size={18} /> My progress</button>
         <p className="nav-label second">Practice</p>
         <a className="nav-item" href="#daily" onClick={close}><Zap size={18} /> Daily challenge <span className="new-pill">NEW</span></a>
@@ -411,21 +429,41 @@ function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (
   )
 }
 
-function ProblemRow({ problem, index, completed, bookmarked, frequency, toggleComplete, toggleBookmark }: { problem: Problem; index: number; completed: boolean; bookmarked: boolean; frequency?: number; toggleComplete: () => void; toggleBookmark: () => void }) {
+function ProblemRow({ problem, index, completed, bookmarked, note, frequency, toggleComplete, toggleBookmark, onSaveNote }: { problem: Problem; index: number; completed: boolean; bookmarked: boolean; note?: string; frequency?: number; toggleComplete: () => void; toggleBookmark: () => void; onSaveNote?: (text: string) => void }) {
+  const [editingNote, setEditingNote] = useState(false)
+  const [noteText, setNoteText] = useState(note || '')
+  
+  const handleSave = () => {
+    onSaveNote?.(noteText)
+    setEditingNote(false)
+  }
+
   return (
-    <div className={`problem-row ${completed ? 'solved' : ''}`}>
-      <button className="check-button" onClick={toggleComplete} aria-pressed={completed} aria-label={completed ? 'Mark incomplete' : 'Mark complete'}>{completed ? <Check size={15} strokeWidth={3} /> : null}</button>
-      <span className="problem-index">{String(index + 1).padStart(2, '0')}</span>
-      <div className="problem-name"><strong>{problem.title}{frequency && frequency >= 3 ? <span className="hot-pill" title={`On ${frequency} study sheets`}><Flame size={9} fill="currentColor" />{frequency}</span> : null}</strong><span>{completed && <i className="completed-dot" />} {completed ? 'Completed · ' : ''}{problem.company}</span></div>
-      <span className="pattern-pill">{problem.pattern}</span>
-      <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
-      <button className={`bookmark-button ${bookmarked ? 'active' : ''}`} onClick={toggleBookmark} aria-label="Bookmark problem"><Bookmark size={17} fill={bookmarked ? 'currentColor' : 'none'} /></button>
-      <a className="solve-button" href={problem.url} target="_blank" rel="noreferrer">{completed ? 'Review' : 'Solve'} <ArrowRight size={15} /></a>
-    </div>
+    <>
+      <div className={`problem-row ${completed ? 'solved' : ''}`}>
+        <button className="check-button" onClick={toggleComplete} aria-pressed={completed} aria-label={completed ? 'Mark incomplete' : 'Mark complete'}>{completed ? <Check size={15} strokeWidth={3} /> : null}</button>
+        <span className="problem-index">{String(index + 1).padStart(2, '0')}</span>
+        <div className="problem-name"><strong>{problem.title}{frequency && frequency >= 3 ? <span className="hot-pill" title={`On ${frequency} study sheets`}><Flame size={9} fill="currentColor" />{frequency}</span> : null}</strong><span>{completed && <i className="completed-dot" />} {completed ? 'Completed · ' : ''}{problem.company}</span></div>
+        <span className="pattern-pill">{problem.pattern}</span>
+        <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
+        <button className={`bookmark-button ${note ? 'has-note' : ''}`} onClick={() => setEditingNote(!editingNote)} aria-label="Toggle notes"><FileText size={17} fill={note ? 'currentColor' : 'none'} /></button>
+        <button className={`bookmark-button ${bookmarked ? 'active' : ''}`} onClick={toggleBookmark} aria-label="Bookmark problem"><Bookmark size={17} fill={bookmarked ? 'currentColor' : 'none'} /></button>
+        <a className="solve-button" href={problem.url} target="_blank" rel="noreferrer">{completed ? 'Review' : 'Solve'} <ArrowRight size={15} /></a>
+      </div>
+      {editingNote && (
+        <div className="problem-note-editor">
+          <textarea placeholder="Write down your approach, time/space complexity, or personal tricks for this problem..." value={noteText} onChange={(e) => setNoteText(e.target.value)} />
+          <div className="note-actions">
+            <button className="ghost-button" onClick={() => setEditingNote(false)}>Cancel</button>
+            <button className="primary-button" onClick={handleSave}><Save size={15} /> Save Note</button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
-function SheetView({ sheet, progress, toggle, onBack }: { sheet: Sheet; progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void; onBack: () => void }) {
+function SheetView({ sheet, progress, toggle, saveNote, onBack }: { sheet: Sheet; progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void; saveNote: (id: string, text: string) => void; onBack: () => void }) {
   const [query, setQuery] = useState('')
   const [difficulty, setDifficulty] = useState('All')
   const [sort, setSort] = useState('Default')
@@ -451,7 +489,7 @@ function SheetView({ sheet, progress, toggle, onBack }: { sheet: Sheet; progress
       <div className="problem-list">
         {Object.entries(grouped).map(([category, problems]) => (
           <section className="category-group" key={category}><div className="category-heading"><div><h2>{category}</h2><span>{problems.filter(p => progress.completed.includes(p.id)).length}/{problems.length} completed</span></div><div className="mini-track"><i style={{ width: `${problems.length ? problems.filter(p => progress.completed.includes(p.id)).length / problems.length * 100 : 0}%` }} /></div></div>
-            {problems.map((problem) => <ProblemRow key={problem.id} problem={problem} index={sheet.problems.indexOf(problem)} completed={progress.completed.includes(problem.id)} bookmarked={progress.bookmarked.includes(problem.id)} toggleComplete={() => toggle('completed', problem.id)} toggleBookmark={() => toggle('bookmarked', problem.id)} />)}
+            {problems.map((problem) => <ProblemRow key={problem.id} problem={problem} index={sheet.problems.indexOf(problem)} completed={progress.completed.includes(problem.id)} bookmarked={progress.bookmarked.includes(problem.id)} note={progress.notes?.[problem.id]} toggleComplete={() => toggle('completed', problem.id)} toggleBookmark={() => toggle('bookmarked', problem.id)} onSaveNote={(text) => saveNote(problem.id, text)} />)}
           </section>
         ))}
         {!Object.keys(grouped).length && <div className="empty-state"><Search size={28} /><h3>No problems found</h3><p>Try changing your search or difficulty filter.</p></div>}
@@ -460,12 +498,12 @@ function SheetView({ sheet, progress, toggle, onBack }: { sheet: Sheet; progress
   )
 }
 
-function BookmarksView({ progress, toggle }: { progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void }) {
+function BookmarksView({ progress, toggle, saveNote }: { progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void; saveNote: (id: string, text: string) => void }) {
   const bookmarked = sheets.flatMap(s => s.problems).filter(p => progress.bookmarked.includes(p.id))
-  return <main className="main-content sheet-view"><div className="simple-page-head"><span className="section-kicker">YOUR COLLECTION</span><h1>Bookmarked problems</h1><p>Everything you saved for another focused practice session.</p></div><div className="problem-list standalone">{bookmarked.map((p, i) => <ProblemRow key={p.id} problem={p} index={i} completed={progress.completed.includes(p.id)} bookmarked toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} />)}{!bookmarked.length && <div className="empty-state"><Bookmark size={29} /><h3>No bookmarks yet</h3><p>Save problems from any sheet and they’ll appear here.</p></div>}</div></main>
+  return <main className="main-content sheet-view"><div className="simple-page-head"><span className="section-kicker">YOUR COLLECTION</span><h1>Bookmarked problems</h1><p>Everything you saved for another focused practice session.</p></div><div className="problem-list standalone">{bookmarked.map((p, i) => <ProblemRow key={p.id} problem={p} index={i} completed={progress.completed.includes(p.id)} bookmarked note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />)}{!bookmarked.length && <div className="empty-state"><Bookmark size={29} /><h3>No bookmarks yet</h3><p>Save problems from any sheet and they’ll appear here.</p></div>}</div></main>
 }
 
-function AllProblemsView({ progress, toggle }: { progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void }) {
+function AllProblemsView({ progress, toggle, saveNote }: { progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void; saveNote: (id: string, text: string) => void }) {
   // One deduped list of every problem across all sheets (ids are canonical, so
   // the same question appears once and stays in sync with its sheets). We rank
   // by "popularity" — how many sheets include a question — so the famous, most
@@ -535,8 +573,61 @@ function AllProblemsView({ progress, toggle }: { progress: ProgressState; toggle
       </div>
 
       <div className="problem-list standalone">
-        {filtered.map((problem, index) => <ProblemRow key={problem.id} problem={problem} index={index} completed={progress.completed.includes(problem.id)} bookmarked={progress.bookmarked.includes(problem.id)} frequency={popularity.get(problem.id) ?? 0} toggleComplete={() => toggle('completed', problem.id)} toggleBookmark={() => toggle('bookmarked', problem.id)} />)}
+        {filtered.map((problem, index) => <ProblemRow key={problem.id} problem={problem} index={index} completed={progress.completed.includes(problem.id)} bookmarked={progress.bookmarked.includes(problem.id)} note={progress.notes?.[problem.id]} frequency={popularity.get(problem.id) ?? 0} toggleComplete={() => toggle('completed', problem.id)} toggleBookmark={() => toggle('bookmarked', problem.id)} onSaveNote={(text) => saveNote(problem.id, text)} />)}
         {!filtered.length && <div className="empty-state"><Search size={28} /><h3>No problems match</h3><p>Try clearing a filter or two.</p></div>}
+      </div>
+    </main>
+  )
+}
+
+function LeaderboardView() {
+  const [leaders, setLeaders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLeaders = async () => {
+      try {
+        const q = query(collection(db, 'progress'), limit(50))
+        const snapshot = await getDocs(q)
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a: any, b: any) => (b.completed?.length || 0) - (a.completed?.length || 0))
+        setLeaders(data)
+      } catch (e) {
+        console.error('Error fetching leaderboard:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLeaders()
+  }, [])
+
+  return (
+    <main className="main-content">
+      <section className="all-hero">
+        <span className="section-kicker">GLOBAL RANKINGS</span>
+        <h1>Leaderboard</h1>
+        <p>See how you stack up against other developers grinding their way to top tier offers.</p>
+      </section>
+      <div className="problem-list standalone">
+        {loading ? (
+          <div className="empty-state"><h3>Loading rankings...</h3></div>
+        ) : (
+          leaders.map((leader, index) => (
+            <div className="problem-row" key={leader.id}>
+              <span className="problem-index" style={{ color: index < 3 ? 'var(--orange)' : 'var(--text-muted)', fontWeight: index < 3 ? 'bold' : 'normal' }}>
+                #{index + 1}
+              </span>
+              <img src={leader.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} alt="avatar" style={{ width: 28, height: 28, borderRadius: '50%', margin: '0 10px' }} />
+              <div className="problem-name">
+                <strong>{leader.displayName || 'Anonymous Developer'}</strong>
+              </div>
+              <span className="pattern-pill">
+                <CheckCircle2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                {leader.completed?.length || 0} solved
+              </span>
+            </div>
+          ))
+        )}
       </div>
     </main>
   )
@@ -547,7 +638,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [view, setView] = useState<View>('home')
   const [activeSheet, setActiveSheet] = useState<Sheet | null>(null)
-  const { state: progress, toggle } = useProgress()
+  const { state: progress, toggle, saveNote } = useProgress()
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('algovault-theme', theme) }, [theme])
   useEffect(() => {
@@ -564,9 +655,10 @@ export default function App() {
       <Header theme={theme} setTheme={setTheme} onMenu={() => setSidebarOpen(true)} view={view} navigate={changeView} solved={progress.completed.length} />
       <Sidebar open={sidebarOpen} close={() => setSidebarOpen(false)} view={view} setView={changeView} />
       {view === 'home' && <HomeView completed={progress.completed} onOpen={openSheet} onBrowseAll={() => changeView('all')} />}
-      {view === 'sheet' && activeSheet && <SheetView sheet={activeSheet} progress={progress} toggle={toggle} onBack={() => changeView('home')} />}
-      {view === 'bookmarks' && <BookmarksView progress={progress} toggle={toggle} />}
-      {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} />}
+      {view === 'sheet' && activeSheet && <SheetView sheet={activeSheet} progress={progress} toggle={toggle} saveNote={saveNote} onBack={() => changeView('home')} />}
+      {view === 'bookmarks' && <BookmarksView progress={progress} toggle={toggle} saveNote={saveNote} />}
+      {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
+      {view === 'leaderboard' && <LeaderboardView />}
       {view === 'progress' && <ProgressView progress={progress} onOpen={openSheet} />}
       <footer><Logo /><p>Build consistency. Learn patterns. Get the offer.</p><span>© 2026 DSA Grind</span></footer>
     </div>
