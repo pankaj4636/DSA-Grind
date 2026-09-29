@@ -22,7 +22,7 @@ and hundreds of problems collapse into a handful of ideas you already know.
 ![React](https://img.shields.io/badge/React-20232a?logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
-![No backend](https://img.shields.io/badge/backend-none%20·%20localStorage-2e9a6e)
+![Firebase Sync](https://img.shields.io/badge/Firebase-Auth%20%26%20Sync-FFCA28?logo=firebase&logoColor=black)
 ![License MIT](https://img.shields.io/badge/license-MIT-6d55dd)
 ![PRs welcome](https://img.shields.io/badge/PRs-welcome-2e9a6e)
 
@@ -35,7 +35,7 @@ and hundreds of problems collapse into a handful of ideas you already know.
 <td width="25%" align="center"><b>497</b><br/><sub>unique problems</sub></td>
 <td width="25%" align="center"><b>14</b><br/><sub>famous roadmaps</sub></td>
 <td width="25%" align="center"><b>15</b><br/><sub>core patterns</sub></td>
-<td width="25%" align="center"><b>0</b><br/><sub>sign-ups · backend</sub></td>
+<td width="25%" align="center"><b>☁️</b><br/><sub>Cloud Sync</sub></td>
 </tr>
 </table>
 
@@ -396,7 +396,7 @@ npm install
 npm run dev
 ```
 
-No database, no API keys, no sign-up. Progress lives in your browser's localStorage.
+Progress syncs seamlessly to the cloud via Firebase Authentication, or falls back to your browser's localStorage if you prefer to use it anonymously.
 
 ---
 
@@ -407,7 +407,10 @@ No database, no API keys, no sign-up. Progress lives in your browser's localStor
 - 🔥 **Most-asked first** — problems are ranked by how many roadmaps include them. *3Sum*, *Course Schedule* and *Implement Trie* each appear on 13 of the 14 sheets, so they sit at the top with a 🔥13 badge. Grind the questions that actually get asked.
 - 📊 **Progress center** — completion, difficulty breakdown, topic mastery, weekly activity, streaks, per-sheet progress.
 - 🎯 **Daily challenge**, bookmarks, search, difficulty filters.
-- 🌗 **Light & dark themes**, fully responsive, zero backend.
+- 🏆 **Global Leaderboard** — compete with other developers worldwide and track top performers.
+- ⏱️ **Mock Interview Mode** — simulate 45-minute timed interview sessions with company-specific problem sets.
+- ☁️ **Cloud Sync & Auth** — sign in with Google to securely sync your progress across all your devices.
+- 🌗 **Light & dark themes**, fully responsive.
 
 <div align="center">
 <img src="docs/preview-problems.png" alt="All Problems — filter by category and company, ranked by frequency" width="900"/>
@@ -521,6 +524,6 @@ files automatically. It's about as low-friction as open source gets.
 
 If AlgoVault helped you prep, **give it a ⭐** — it's the whole reason someone else finds it next.
 
-<sub>MIT licensed · built with React + TypeScript + Vite · no tracking, no backend, no sign-up</sub>
+<sub>MIT licensed · built with React + TypeScript + Vite + Firebase</sub>
 
 </div>

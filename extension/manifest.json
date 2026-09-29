@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "DSA Grind Auto-Sync",
+  "version": "1.0",
+  "description": "Automatically syncs your completed LeetCode problems to DSA Grind.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/problems/*",
+    "http://localhost:5173/*",
+    "https://dsa.nextjoblist.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/problems/*"],
+      "js": ["content-leetcode.js"]
+    },
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://dsa.nextjoblist.com/*"
+      ],
+      "js": ["content-dsagrind.js"]
+    }
+  ]
+}

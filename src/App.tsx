@@ -104,6 +104,21 @@ function useProgress() {
     }))
   }
   const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
+  
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'DSA_GRIND_SYNC' && Array.isArray(event.data.completed)) {
+        const newIds = event.data.completed;
+        setState((current) => {
+          const merged = Array.from(new Set([...current.completed, ...newIds]));
+          return { ...current, completed: merged };
+        });
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   return { state, toggle, saveNote }
 }
 
