@@ -28,4 +28,5 @@ export interface ProgressState {
   completed: string[]
   bookmarked: string[]
   notes: Record<string, string>
+  completionDates?: Record<string, string>
 }

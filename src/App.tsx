@@ -41,7 +41,7 @@ function migrateProgress(raw: unknown): ProgressState {
     Object.entries(notes).forEach(([id, text]) => { newNotes[legacyToCanonical[id] ?? id] = text })
     return newNotes
   }
-  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes) }
+  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes), completionDates: base.completionDates || {} }
 }
 
 function useProgress() {
@@ -50,7 +50,7 @@ function useProgress() {
     try {
       return migrateProgress(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'))
     } catch {
-      return { completed: [], bookmarked: [], notes: {} }
+      return { completed: [], bookmarked: [], notes: {}, completionDates: {} }
     }
   })
 
@@ -66,7 +66,8 @@ function useProgress() {
             const mergedCompleted = Array.from(new Set([...local.completed, ...(cloudData.completed || [])]));
             const mergedBookmarked = Array.from(new Set([...local.bookmarked, ...(cloudData.bookmarked || [])]));
             const mergedNotes = { ...(local.notes || {}), ...(cloudData.notes || {}) };
-            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes };
+            const mergedDates = { ...(local.completionDates || {}), ...(cloudData.completionDates || {}) };
+            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes, completionDates: mergedDates };
           });
         }
       } catch (e) {
@@ -97,21 +98,33 @@ function useProgress() {
   }, [state, user]);
 
   const toggle = (key: keyof ProgressState, id: string) => {
-    if (key === 'notes') return;
-    setState((current) => ({
-      ...current,
-      [key]: (current[key] as string[]).includes(id) ? (current[key] as string[]).filter((item) => item !== id) : [...(current[key] as string[]), id],
-    }))
+    if (key === 'notes' || key === 'completionDates') return;
+    setState((current) => {
+      const arr = current[key] as string[];
+      const isCompleted = arr.includes(id);
+      const nextArr = isCompleted ? arr.filter((item) => item !== id) : [...arr, id];
+      const updates: Partial<ProgressState> = { [key]: nextArr };
+      if (key === 'completed') {
+        const dates = { ...(current.completionDates || {}) };
+        if (!isCompleted) dates[id] = new Date().toISOString().split('T')[0];
+        else delete dates[id];
+        updates.completionDates = dates;
+      }
+      return { ...current, ...updates };
+    });
   }
   const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
   
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'DSA_GRIND_SYNC' && Array.isArray(event.data.completed)) {
-        const newIds = event.data.completed;
+        const newIds: string[] = event.data.completed;
         setState((current) => {
           const merged = Array.from(new Set([...current.completed, ...newIds]));
-          return { ...current, completed: merged };
+          const dates = { ...(current.completionDates || {}) };
+          const today = new Date().toISOString().split('T')[0];
+          newIds.forEach((id: string) => { if (!dates[id]) dates[id] = today; });
+          return { ...current, completed: merged, completionDates: dates };
         });
       }
     };
@@ -396,6 +409,58 @@ function HomeView({ completed, onOpen, onBrowseAll }: { completed: string[]; onO
   )
 }
 
+function Heatmap({ dates }: { dates: Record<string, string> }) {
+  const counts = useMemo(() => {
+    const map = new Map<string, number>()
+    Object.values(dates).forEach(d => { map.set(d, (map.get(d) || 0) + 1) })
+    return map
+  }, [dates])
+  
+  const days = 147; 
+  const today = new Date();
+  const squares = [];
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const count = counts.get(dateStr) || 0;
+    
+    let level = 0;
+    if (count > 0) level = 1;
+    if (count > 3) level = 2;
+    if (count > 6) level = 3;
+    if (count > 9) level = 4;
+    
+    squares.push({ date: dateStr, count, level, isToday: i === 0 });
+  }
+
+  return (
+    <div className="heatmap-container">
+      <div className="heatmap-scroll">
+        <div className="heatmap-grid">
+          {squares.map((sq, idx) => (
+            <div 
+              key={`${sq.date}-${idx}`} 
+              className={`heatmap-square level-${sq.level} ${sq.isToday ? 'today' : ''}`} 
+              title={`${sq.count} problems on ${sq.date}`}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="heatmap-legend">
+        <span>Less</span>
+        <div className="heatmap-square level-0"></div>
+        <div className="heatmap-square level-1"></div>
+        <div className="heatmap-square level-2"></div>
+        <div className="heatmap-square level-3"></div>
+        <div className="heatmap-square level-4"></div>
+        <span>More</span>
+      </div>
+    </div>
+  )
+}
+
 function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (sheet: Sheet) => void }) {
   const allProblems = sheets.flatMap((sheet) => sheet.problems)
   const solvedProblems = allProblems.filter((problem) => progress.completed.includes(problem.id))
@@ -412,7 +477,7 @@ function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (
     return { ...acc, [problem.category]: { total: current.total + 1, solved: current.solved + Number(progress.completed.includes(problem.id)) } }
   }, {})
   const topTopics = Object.entries(topicMap).sort((a, b) => b[1].total - a[1].total).slice(0, 7)
-  const weekActivity = [Math.max(0, solved - 6), Math.max(0, solved - 4), solved ? 1 : 0, Math.max(0, solved - 3), solved ? 2 : 0, Math.max(0, solved - 5), solved ? 1 : 0].map((value) => Math.min(5, value))
+  
   const nextMilestone = Math.max(25, Math.ceil((solved + 1) / 25) * 25)
 
   return (
@@ -434,7 +499,7 @@ function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (
 
       <section className="progress-dashboard-grid">
         <article className="analytics-card difficulty-card"><div className="analytics-heading"><div><span>DIFFICULTY</span><h2>Problem breakdown</h2></div><Award size={20} /></div><div className="difficulty-breakdown">{difficultyStats.map((item) => <div className="difficulty-stat" key={item.level}><div className={`difficulty-orb ${item.level.toLowerCase()}`}><strong>{item.percentage}%</strong></div><div className="difficulty-stat-copy"><div><strong>{item.level}</strong><span>{item.complete} / {item.available}</span></div><div className="difficulty-track"><i className={item.level.toLowerCase()} style={{ width: `${item.percentage}%` }} /></div></div></div>)}</div></article>
-        <article className="analytics-card activity-card"><div className="analytics-heading"><div><span>ACTIVITY</span><h2>This week</h2></div><span className="positive-change"><ArrowUpRight size={13} /> Keep going</span></div><div className="activity-total"><strong>{weekActivity.reduce((a, b) => a + b, 0)}</strong><span>problems practiced</span></div><div className="activity-chart">{weekActivity.map((value, index) => <div className="activity-day" key={index}><div className="activity-bar-wrap"><i style={{ height: `${Math.max(10, value * 18)}%` }} className={index === 6 ? 'today' : ''} /></div><span>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}</span></div>)}</div></article>
+        <article className="analytics-card activity-card"><div className="analytics-heading"><div><span>ACTIVITY</span><h2>Contributions</h2></div><span className="positive-change"><ArrowUpRight size={13} /> Keep going</span></div><Heatmap dates={progress.completionDates || {}} /></article>
       </section>
 
       <section className="progress-dashboard-grid lower-grid">
