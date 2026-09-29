@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/preview-home.png" alt="AlgoVault — curated DSA roadmaps as 3D glass panels" width="880"/>
+<img src="docs/preview-home.png" alt="DSA Grind — curated DSA roadmaps as 3D glass panels" width="880"/>
 
-<h1>⚡ AlgoVault</h1>
+<h1>⚡ DSA Grind</h1>
 
 ### Master DSA. Land the offer.
 
@@ -436,9 +436,9 @@ roster: Blind 75 really is 75, NeetCode 150 really is 150.
 | Top Interview 150 | LeetCode | 150 | 10–14 weeks |
 | Love Babbar 450 | CodeHelp | 450 | 20–24 weeks |
 | AlgoMap 100 | AlgoMap | 100 | 6–8 weeks |
-| Amazon Top Questions | AlgoVault | 75 | 6–8 weeks |
-| Google Top Questions | AlgoVault | 75 | 6–8 weeks |
-| Meta Top Questions | AlgoVault | 75 | 5–7 weeks |
+| Amazon Top Questions | DSA Grind | 75 | 6–8 weeks |
+| Google Top Questions | DSA Grind | 75 | 6–8 weeks |
+| Meta Top Questions | DSA Grind | 75 | 5–7 weeks |
 
 > ⭐ = featured. Every problem links straight to LeetCode, and solving it once checks it off on every
 > sheet it appears in.
@@ -504,7 +504,7 @@ real technique name — it's what makes the library searchable by idea rather th
 
 ## 🤝 Contributing
 
-AlgoVault is **open-source and community-driven** — and most contributions are plain Markdown, no React
+DSA Grind is **open-source and community-driven** — and most contributions are plain Markdown, no React
 required. Spotted a dead LeetCode link, a wrong difficulty, or a missing problem? That's a real fix.
 
 - 🐛 [**Open an issue**](https://github.com/sumitsingh4411/faang/issues/new) — reporting a bad link counts.
@@ -522,7 +522,7 @@ files automatically. It's about as low-friction as open source gets.
 
 <a href="https://dsa.nextjoblist.com/"><img src="https://img.shields.io/badge/▶_Try_it_now-dsa.nextjoblist.com-6d55dd?style=for-the-badge&labelColor=1c1a21" alt="Try it now"/></a>
 
-If AlgoVault helped you prep, **give it a ⭐** — it's the whole reason someone else finds it next.
+If DSA Grind helped you prep, **give it a ⭐** — it's the whole reason someone else finds it next.
 
 <sub>MIT licensed · built with React + TypeScript + Vite + Firebase</sub>
 

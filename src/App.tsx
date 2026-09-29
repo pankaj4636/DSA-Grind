@@ -11,7 +11,7 @@ import { useAuth } from './lib/AuthContext'
 import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { db } from './lib/firebase'
 const sheets = loadSheets()
-const STORAGE_KEY = 'algovault-progress-v1'
+const STORAGE_KEY = 'dsagrind-progress-v1'
 
 const iconMap = {
   target: Target,
@@ -768,13 +768,13 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('algovault-theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('dsagrind-theme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [view, setView] = useState<View>('home')
   const [activeSheet, setActiveSheet] = useState<Sheet | null>(null)
   const { state: progress, toggle, saveNote } = useProgress()
 
-  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('algovault-theme', theme) }, [theme])
+  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('dsagrind-theme', theme) }, [theme])
   useEffect(() => {
     const handler = (event: Event) => toggle('completed', (event as CustomEvent<string>).detail)
     document.addEventListener('toggle-complete', handler)

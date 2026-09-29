@@ -1,6 +1,6 @@
-# Contributing to AlgoVault
+# Contributing to DSA Grind
 
-Thanks for wanting to help — AlgoVault gets better every time someone fixes a link, adds a sheet, or
+Thanks for wanting to help — DSA Grind gets better every time someone fixes a link, adds a sheet, or
 sharpens the learning material. **You do not need to be a React developer to contribute.** Most of the
 value lives in plain Markdown.
 
