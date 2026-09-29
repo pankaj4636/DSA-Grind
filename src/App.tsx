@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, Award, BarChart3, Bookmark, BookOpen, BrainCircuit,
   BriefcaseBusiness, Building2, CalendarDays, Check, CheckCircle2, ChevronDown, Circle, Clock3,
   Code2, Flame, Grid2X2, Layers3, LayoutGrid, ListChecks, Menu, Moon, Search, Settings2, Sparkles,
-  Star, Sun, Target, TrendingUp, Trophy, X, Zap, FileText, Save,
+  Star, Sun, Target, TrendingUp, Trophy, X, Zap, FileText, Save, PlaySquare
 } from 'lucide-react'
 import { loadSheets, TOPIC_ORDER } from './lib/parseSheets'
 import type { Problem, ProgressState, Sheet } from './types'
@@ -21,8 +21,8 @@ const iconMap = {
 }
 
 const difficultyRank = { Easy: 0, Medium: 1, Hard: 2 }
-type View = 'home' | 'sheet' | 'bookmarks' | 'progress' | 'all' | 'leaderboard'
-type NavTarget = 'home' | 'bookmarks' | 'progress' | 'all' | 'leaderboard'
+type View = 'home' | 'sheet' | 'bookmarks' | 'progress' | 'all' | 'leaderboard' | 'mock'
+type NavTarget = 'home' | 'bookmarks' | 'progress' | 'all' | 'leaderboard' | 'mock'
 
 // Rewrite any legacy sheet-scoped ids ("slug:title") to the canonical
 // per-question id and drop duplicates, so old saved progress carries over and
@@ -83,6 +83,7 @@ function useProgress() {
         try {
           await setDoc(doc(db, 'progress', user.uid), {
             ...state,
+            completedCount: state.completed.length,
             displayName: user.displayName || 'Anonymous Developer',
             photoURL: user.photoURL || '',
             lastActive: new Date().toISOString(),
@@ -156,6 +157,7 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
         <button onClick={() => { navigate('home'); setTimeout(() => document.getElementById('sheets')?.scrollIntoView(), 50) }}>Sheets</button>
         <button className={view === 'all' ? 'active' : ''} onClick={() => navigate('all')}>All Problems</button>
         <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => navigate('leaderboard')}>Leaderboard</button>
+        <button className={view === 'mock' ? 'active' : ''} onClick={() => navigate('mock')}>Mock Interview</button>
         <button className={view === 'progress' ? 'active' : ''} onClick={() => navigate('progress')}>Progress</button>
       </nav>
       <div className="top-actions">
@@ -196,6 +198,7 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <button className={view === 'progress' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('progress')}><BarChart3 size={18} /> My progress</button>
         <p className="nav-label second">Practice</p>
         <a className="nav-item" href="#daily" onClick={close}><Zap size={18} /> Daily challenge <span className="new-pill">NEW</span></a>
+        <button className={view === 'mock' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('mock')}><Clock3 size={18} /> Mock interview</button>
         <button className={view === 'all' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('all')}><ListChecks size={18} /> All problems</button>
         <div className="streak-card">
           <div className="streak-icon"><Flame size={19} fill="currentColor" /></div>
@@ -373,7 +376,7 @@ function HomeView({ completed, onOpen, onBrowseAll }: { completed: string[]; onO
         </div>
         <div className="glass-grid">{visibleSheets.map((sheet) => <SheetCard key={sheet.slug} sheet={sheet} completed={completed} onOpen={() => onOpen(sheet)} />)}</div>
       </section>
-      <section className="quote-card"><Star size={19} fill="currentColor" /><blockquote>“Success is the sum of small efforts, repeated day in and day out.”</blockquote><span>— Robert Collier</span></section>
+      <section className="quote-card"><Star size={19} fill="currentColor" /><blockquote>“Jab tak phodenge nahi tab tak chhodenge nahi”</blockquote><span>— Owner</span></section>
     </main>
   )
 }
@@ -446,6 +449,7 @@ function ProblemRow({ problem, index, completed, bookmarked, note, frequency, to
         <div className="problem-name"><strong>{problem.title}{frequency && frequency >= 3 ? <span className="hot-pill" title={`On ${frequency} study sheets`}><Flame size={9} fill="currentColor" />{frequency}</span> : null}</strong><span>{completed && <i className="completed-dot" />} {completed ? 'Completed · ' : ''}{problem.company}</span></div>
         <span className="pattern-pill">{problem.pattern}</span>
         <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
+        <a className="bookmark-button" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(problem.title + ' leetcode solution neetcode')}`} target="_blank" rel="noreferrer" title="Watch explanation" aria-label="Watch video explanation"><PlaySquare size={17} /></a>
         <button className={`bookmark-button ${note ? 'has-note' : ''}`} onClick={() => setEditingNote(!editingNote)} aria-label="Toggle notes"><FileText size={17} fill={note ? 'currentColor' : 'none'} /></button>
         <button className={`bookmark-button ${bookmarked ? 'active' : ''}`} onClick={toggleBookmark} aria-label="Bookmark problem"><Bookmark size={17} fill={bookmarked ? 'currentColor' : 'none'} /></button>
         <a className="solve-button" href={problem.url} target="_blank" rel="noreferrer">{completed ? 'Review' : 'Solve'} <ArrowRight size={15} /></a>
@@ -587,10 +591,9 @@ function LeaderboardView() {
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
-        const q = query(collection(db, 'progress'), limit(50))
+        const q = query(collection(db, 'progress'), orderBy('completedCount', 'desc'), limit(50))
         const snapshot = await getDocs(q)
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-          .sort((a: any, b: any) => (b.completed?.length || 0) - (a.completed?.length || 0))
         setLeaders(data)
       } catch (e) {
         console.error('Error fetching leaderboard:', e)
@@ -633,6 +636,122 @@ function LeaderboardView() {
   )
 }
 
+function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressState; toggle: (key: keyof ProgressState, id: string) => void; saveNote: (id: string, text: string) => void }) {
+  const [phase, setPhase] = useState<'setup' | 'running' | 'summary'>('setup')
+  const [company, setCompany] = useState('All')
+  const [sessionProblems, setSessionProblems] = useState<Problem[]>([])
+  const [timeLeft, setTimeLeft] = useState(45 * 60)
+  
+  const allProblems = useMemo(() => {
+    const seen = new Set<string>()
+    return sheets.flatMap((sheet) => sheet.problems).filter((problem) => !seen.has(problem.id) && seen.add(problem.id))
+  }, [])
+  const companies = useMemo(() => Array.from(new Set(allProblems.flatMap((problem) => problem.companies))).sort(), [allProblems])
+
+  const startInterview = () => {
+    let pool = company === 'All' ? allProblems : allProblems.filter(p => p.companies.includes(company))
+    if (pool.length < 2) pool = allProblems // fallback if not enough problems
+    
+    // Pick 1 medium and 1 hard, or just 2 random if not possible
+    let mediums = pool.filter(p => p.difficulty === 'Medium')
+    let hards = pool.filter(p => p.difficulty === 'Hard')
+    
+    let p1 = mediums.length ? mediums[Math.floor(Math.random() * mediums.length)] : pool[Math.floor(Math.random() * pool.length)]
+    pool = pool.filter(p => p.id !== p1.id)
+    hards = hards.filter(p => p.id !== p1.id)
+    let p2 = hards.length ? hards[Math.floor(Math.random() * hards.length)] : pool[Math.floor(Math.random() * pool.length)]
+
+    setSessionProblems([p1, p2])
+    setTimeLeft(45 * 60)
+    setPhase('running')
+  }
+
+  useEffect(() => {
+    let timer: number
+    if (phase === 'running' && timeLeft > 0) {
+      timer = window.setInterval(() => setTimeLeft(t => t - 1), 1000)
+    } else if (timeLeft === 0 && phase === 'running') {
+      setPhase('summary')
+    }
+    return () => clearInterval(timer)
+  }, [phase, timeLeft])
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <main className="main-content">
+      {phase === 'setup' && (
+        <>
+          <section className="all-hero">
+            <span className="section-kicker">MOCK INTERVIEW</span>
+            <h1>Test your skills</h1>
+            <p>Simulate a real 45-minute technical interview. We'll give you 2 random problems to solve under time pressure.</p>
+          </section>
+          <div className="analytics-card" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: 40 }}>
+            <Clock3 size={48} style={{ margin: '0 auto 20px', color: 'var(--orange)' }} />
+            <h2 style={{ marginBottom: 20 }}>Configure your session</h2>
+            <div style={{ marginBottom: 30 }}>
+              <label style={{ display: 'block', marginBottom: 10, fontWeight: 'bold' }}>Target Company (Optional)</label>
+              <div className="toolbar-select" style={{ display: 'inline-flex' }}>
+                <select value={company} onChange={(event) => setCompany(event.target.value)}>
+                  <option>All</option>
+                  {companies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <ChevronDown size={15} />
+              </div>
+            </div>
+            <button className="primary-button" style={{ fontSize: '1.1rem', padding: '12px 24px' }} onClick={startInterview}>
+              Start 45-min Interview
+            </button>
+          </div>
+        </>
+      )}
+
+      {phase === 'running' && (
+        <>
+          <div className="all-results-head" style={{ justifyContent: 'space-between', paddingBottom: 20, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+            <div>
+              <span className="section-kicker">SESSION IN PROGRESS</span>
+              <h2>Solve both problems</h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: timeLeft < 300 ? 'var(--red)' : 'var(--text)' }}>
+                {formatTime(timeLeft)}
+              </div>
+              <button className="ghost-button" onClick={() => setPhase('summary')}>End Early</button>
+            </div>
+          </div>
+          <div className="problem-list standalone">
+            {sessionProblems.map((p, index) => (
+              <ProblemRow key={p.id} problem={p} index={index} completed={progress.completed.includes(p.id)} bookmarked={progress.bookmarked.includes(p.id)} note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {phase === 'summary' && (
+        <>
+          <section className="all-hero" style={{ textAlign: 'center' }}>
+            <Trophy size={48} style={{ margin: '0 auto 20px', color: 'var(--green)' }} />
+            <h1>Session Complete</h1>
+            <p>Great job practicing under pressure. Review your solutions and notes below.</p>
+            <button className="ghost-button" style={{ marginTop: 20 }} onClick={() => setPhase('setup')}>Start Another</button>
+          </section>
+          <div className="problem-list standalone">
+            {sessionProblems.map((p, index) => (
+              <ProblemRow key={p.id} problem={p} index={index} completed={progress.completed.includes(p.id)} bookmarked={progress.bookmarked.includes(p.id)} note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />
+            ))}
+          </div>
+        </>
+      )}
+    </main>
+  )
+}
+
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('algovault-theme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -659,6 +778,7 @@ export default function App() {
       {view === 'bookmarks' && <BookmarksView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'leaderboard' && <LeaderboardView />}
+      {view === 'mock' && <MockInterviewView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'progress' && <ProgressView progress={progress} onOpen={openSheet} />}
       <footer><Logo /><p>Build consistency. Learn patterns. Get the offer.</p><span>© 2026 DSA Grind</span></footer>
     </div>
