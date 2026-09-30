@@ -21,8 +21,8 @@ const iconMap = {
 }
 
 const difficultyRank = { Easy: 0, Medium: 1, Hard: 2 }
-type View = 'home' | 'sheet' | 'bookmarks' | 'progress' | 'all' | 'leaderboard' | 'mock'
-type NavTarget = 'home' | 'bookmarks' | 'progress' | 'all' | 'leaderboard' | 'mock'
+type View = 'home' | 'sheet' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile'
+type NavTarget = 'home' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile'
 
 // Rewrite any legacy sheet-scoped ids ("slug:title") to the canonical
 // per-question id and drop duplicates, so old saved progress carries over and
@@ -186,11 +186,11 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
         <button className={view === 'all' ? 'active' : ''} onClick={() => navigate('all')}>All Problems</button>
         <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => navigate('leaderboard')}>Leaderboard</button>
         <button className={view === 'mock' ? 'active' : ''} onClick={() => navigate('mock')}>Mock Interview</button>
-        <button className={view === 'progress' ? 'active' : ''} onClick={() => navigate('progress')}>Progress</button>
+        <button className={view === 'profile' ? 'active' : ''} onClick={() => navigate('profile')}>Profile</button>
       </nav>
       <div className="top-actions">
         {user ? (
-          <button className="solved-chip" onClick={logout} title="Sign out" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <button className="solved-chip" onClick={() => navigate('profile')} title="View profile" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <img src={user.photoURL || ''} alt="avatar" style={{ width: 16, height: 16, borderRadius: '50%' }} />
             <strong>{user.displayName?.split(' ')[0]}</strong>
           </button>
@@ -199,7 +199,7 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
             <strong>Sign In</strong>
           </button>
         )}
-        <button className="solved-chip desktop-only" onClick={() => navigate('progress')} title="View your progress">
+        <button className="solved-chip desktop-only" onClick={() => navigate('profile')} title="View your profile">
           <CheckCircle2 size={13} strokeWidth={2.6} />
           <strong>{solved}</strong> solved
         </button>
@@ -223,7 +223,7 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <a className="nav-item" href="#sheets" onClick={close}><BookOpen size={18} /> Study sheets</a>
         <button className={view === 'bookmarks' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('bookmarks')}><Bookmark size={18} /> Bookmarks</button>
         <button className={view === 'leaderboard' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('leaderboard')}><Trophy size={18} /> Leaderboard</button>
-        <button className={view === 'progress' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('progress')}><BarChart3 size={18} /> My progress</button>
+        <button className={view === 'profile' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('profile')}><BarChart3 size={18} /> Profile</button>
         <p className="nav-label second">Practice</p>
         <a className="nav-item" href="#daily" onClick={close}><Zap size={18} /> Daily challenge <span className="new-pill">NEW</span></a>
         <button className={view === 'mock' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('mock')}><Clock3 size={18} /> Mock interview</button>
@@ -461,7 +461,8 @@ function Heatmap({ dates }: { dates: Record<string, string> }) {
   )
 }
 
-function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (sheet: Sheet) => void }) {
+function ProfileView({ progress, onOpen }: { progress: ProgressState; onOpen: (sheet: Sheet) => void }) {
+  const { user, logout } = useAuth()
   const allProblems = sheets.flatMap((sheet) => sheet.problems)
   const solvedProblems = allProblems.filter((problem) => progress.completed.includes(problem.id))
   const total = allProblems.length
@@ -480,11 +481,15 @@ function ProgressView({ progress, onOpen }: { progress: ProgressState; onOpen: (
   
   const nextMilestone = Math.max(25, Math.ceil((solved + 1) / 25) * 25)
 
+  if (!user) return <main className="main-content"><div className="empty-state"><h3>Not logged in</h3></div></main>
+
   return (
     <main className="main-content progress-page">
-      <section className="progress-title-row">
-        <div><span className="section-kicker">PERFORMANCE CENTER</span><h1>Your progress</h1><p>See what you’ve mastered, find your weak spots, and keep the streak alive.</p></div>
-        <div className="progress-period"><CalendarDays size={16} /> All time <ChevronDown size={14} /></div>
+      <section className="all-hero" style={{ textAlign: 'center', paddingBottom: 40 }}>
+        <img src={user.photoURL || ''} alt="avatar" style={{ width: 96, height: 96, borderRadius: '50%', margin: '0 auto 20px', display: 'block', border: '3px solid var(--orange)' }} />
+        <h1>{user.displayName}</h1>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>{user.email}</p>
+        <button className="primary-button" style={{ margin: '0 auto' }} onClick={logout}>Sign Out</button>
       </section>
 
       <section className="progress-overview-card">
@@ -832,6 +837,8 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
   )
 }
 
+
+
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('dsagrind-theme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -859,7 +866,7 @@ export default function App() {
       {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'leaderboard' && <LeaderboardView />}
       {view === 'mock' && <MockInterviewView progress={progress} toggle={toggle} saveNote={saveNote} />}
-      {view === 'progress' && <ProgressView progress={progress} onOpen={openSheet} />}
+      {view === 'profile' && <ProfileView progress={progress} onOpen={openSheet} />}
       <footer><Logo /><p>Build consistency. Learn patterns. Get the offer.</p><span>© 2026 DSA Grind</span></footer>
     </div>
   )

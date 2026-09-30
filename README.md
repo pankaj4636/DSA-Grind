@@ -13,8 +13,6 @@ and hundreds of problems collapse into a handful of ideas you already know.
 
 <br/>
 
-<a href="https://dsa.nextjoblist.com/"><img src="https://img.shields.io/badge/▶_Live_demo-dsa.nextjoblist.com-6d55dd?style=for-the-badge&labelColor=1c1a21" alt="Live demo"/></a>
-&nbsp;
 <a href="#-learn-the-patterns"><img src="https://img.shields.io/badge/📖_Learn_the_patterns-1c1a21?style=for-the-badge" alt="Learn the patterns"/></a>
 
 <br/><br/>
@@ -23,7 +21,6 @@ and hundreds of problems collapse into a handful of ideas you already know.
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 ![Firebase Sync](https://img.shields.io/badge/Firebase-Auth%20%26%20Sync-FFCA28?logo=firebase&logoColor=black)
-![License MIT](https://img.shields.io/badge/license-MIT-6d55dd)
 ![PRs welcome](https://img.shields.io/badge/PRs-welcome-2e9a6e)
 
 </div>
@@ -385,8 +382,6 @@ New material this late only costs you confidence.
 
 ## 🚀 Quick start
 
-**Just want to use it?** → **[dsa.nextjoblist.com](https://dsa.nextjoblist.com/)** — nothing to install.
-
 Run it locally:
 
 ```bash
@@ -520,10 +515,8 @@ files automatically. It's about as low-friction as open source gets.
 
 ### Build consistency. Learn patterns. Get the offer.
 
-<a href="https://dsa.nextjoblist.com/"><img src="https://img.shields.io/badge/▶_Try_it_now-dsa.nextjoblist.com-6d55dd?style=for-the-badge&labelColor=1c1a21" alt="Try it now"/></a>
-
 If DSA Grind helped you prep, **give it a ⭐** — it's the whole reason someone else finds it next.
 
-<sub>MIT licensed · built with React + TypeScript + Vite + Firebase</sub>
+<sub>Built with React + TypeScript + Vite + Firebase</sub>
 
 </div>
