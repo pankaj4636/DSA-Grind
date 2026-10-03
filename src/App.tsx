@@ -676,9 +676,17 @@ function LeaderboardView() {
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
-        const q = query(collection(db, 'progress'), orderBy('completedCount', 'desc'), limit(50))
+        const q = collection(db, 'progress')
         const snapshot = await getDocs(q)
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        
+        // Sort in memory so users without 'completedCount' are still included
+        data.sort((a: any, b: any) => {
+          const countA = a.completedCount ?? (Array.isArray(a.completed) ? a.completed.length : 0);
+          const countB = b.completedCount ?? (Array.isArray(b.completed) ? b.completed.length : 0);
+          return countB - countA;
+        });
+
         setLeaders(data)
       } catch (e) {
         console.error('Error fetching leaderboard:', e)
@@ -711,7 +719,7 @@ function LeaderboardView() {
               </div>
               <span className="pattern-pill">
                 <CheckCircle2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                {leader.completed?.length || 0} solved
+                {leader.completedCount ?? (Array.isArray(leader.completed) ? leader.completed.length : 0)} solved
               </span>
             </div>
           ))
