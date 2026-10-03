@@ -11,7 +11,7 @@ const observer = new MutationObserver(() => {
   // Try to find the Accepted text in the result pane
   const resultTextEl = document.querySelector('[data-e2e-locator="submission-result"]') || document.querySelector('.text-green-s');
   let isAccepted = false;
-  
+
   if (resultTextEl && resultTextEl.textContent.includes('Accepted')) {
     isAccepted = true;
   } else {
@@ -31,7 +31,7 @@ const observer = new MutationObserver(() => {
     if (slug) {
       const problemId = 'lc:' + slug;
       console.log("DSA Grind Sync: Detected Accepted for", problemId);
-      
+
       chrome.storage.local.get({ completedQueue: [] }, (data) => {
         const queue = new Set(data.completedQueue);
         queue.add(problemId);
@@ -69,3 +69,25 @@ function showToast(message) {
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
+function injectCompanyTags() {
+  const titleElement = document.querySelector('.text-title-large a') || document.querySelector('[data-cy="question-title"]');
+  if (titleElement && !document.querySelector('.dsa-grind-badge-container')) {
+    const badgeContainer = document.createElement('div');
+    badgeContainer.className = 'dsa-grind-badge-container';
+    badgeContainer.style.cssText = "display: flex; gap: 8px; margin-top: 10px;";
+    
+    // Default mock company until integrated with background storage
+    const companies = ["Amazon"]; 
+    
+    companies.forEach(company => {
+      const badge = document.createElement('span');
+      badge.textContent = `🔥 ${company}`;
+      badge.style.cssText = "background: rgba(255, 153, 0, 0.15); color: #ff9900; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255, 153, 0, 0.3);";
+      badgeContainer.appendChild(badge);
+    });
+
+    titleElement.insertAdjacentElement('afterend', badgeContainer);
+  }
+}
+
+setInterval(injectCompanyTags, 2000);
