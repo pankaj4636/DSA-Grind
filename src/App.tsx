@@ -497,7 +497,7 @@ function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: P
         <img src={user.photoURL || ''} alt="avatar" style={{ width: 96, height: 96, borderRadius: '50%', margin: '0 auto 20px', display: 'block', border: '3px solid var(--orange)' }} />
         <h1>{user.displayName}</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: 15 }}>{user.email}</p>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
           <input 
             value={progress.leetcodeUsername || ''} 
             onChange={(e) => updateLeetcodeUsername(e.target.value)} 
@@ -938,23 +938,23 @@ function ContestsView({ progress }: { progress: ProgressState }) {
         <p>Never miss a LeetCode contest. Put your skills to the test against the world.</p>
       </section>
 
-      <section className="progress-dashboard-grid" style={{ maxWidth: 800, margin: '0 auto' }}>
-        <article className="analytics-card" style={{ padding: 30, textAlign: 'center' }}>
+      <section className="progress-dashboard-grid" style={{ maxWidth: 800, margin: '17px auto 0' }}>
+        <article className="analytics-card" style={{ textAlign: 'center' }}>
           <div className="analytics-heading" style={{ justifyContent: 'center' }}>
             <h2>Weekly Contest</h2>
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '20px 0', color: 'var(--text)' }}>
+          <div className="contest-countdown">
             {formatCountdown(nextWeekly)}
           </div>
           <p style={{ color: 'var(--text-muted)' }}>Every Sunday at 2:30 AM UTC</p>
           <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="primary-button" style={{ display: 'inline-block', marginTop: 20 }}>View on LeetCode</a>
         </article>
 
-        <article className="analytics-card" style={{ padding: 30, textAlign: 'center' }}>
+        <article className="analytics-card" style={{ textAlign: 'center' }}>
           <div className="analytics-heading" style={{ justifyContent: 'center' }}>
             <h2>Biweekly Contest</h2>
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '20px 0', color: 'var(--text)' }}>
+          <div className="contest-countdown">
             {formatCountdown(nextBiweekly)}
           </div>
           <p style={{ color: 'var(--text-muted)' }}>Every other Saturday at 2:30 PM UTC</p>
@@ -963,7 +963,7 @@ function ContestsView({ progress }: { progress: ProgressState }) {
       </section>
 
       {progress.leetcodeUsername ? (
-        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', padding: 30 }}>
+        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto' }}>
           <div className="analytics-heading" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 15, marginBottom: 20, justifyContent: 'center' }}>
             <h2>LeetCode Rating for {progress.leetcodeUsername}</h2>
           </div>
@@ -973,22 +973,22 @@ function ContestsView({ progress }: { progress: ProgressState }) {
             <div className="empty-state"><h3 style={{ color: 'var(--red)' }}>{ratingError}</h3></div>
           ) : ratingData ? (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, marginBottom: 30 }}>
-                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+              <div className="rating-stats-grid">
+                <div className="rating-stat-box">
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Rating</span>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10, color: 'var(--orange)' }}>
+                  <div className="rating-stat-value" style={{ color: 'var(--orange)' }}>
                     {Math.round(ratingData.contestRating)}
                   </div>
                 </div>
-                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+                <div className="rating-stat-box">
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Global Rank</span>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10 }}>
+                  <div className="rating-stat-value">
                     #{ratingData.contestGlobalRanking.toLocaleString()}
                   </div>
                 </div>
-                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+                <div className="rating-stat-box">
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Percentage</span>
-                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10, color: 'var(--green)' }}>
+                  <div className="rating-stat-value" style={{ color: 'var(--green)' }}>
                     {ratingData.contestTopPercentage}%
                   </div>
                 </div>
@@ -997,14 +997,14 @@ function ContestsView({ progress }: { progress: ProgressState }) {
               <h3 style={{ marginBottom: 15 }}>Recent Contests</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {ratingData.contestParticipation.slice().reverse().slice(0, 5).map((c: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div key={i} className="contest-history-row">
                     <div>
                       <strong>{c.contest.title}</strong>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>Solved: {c.problemsSolved} / {c.totalProblems}</div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div className="contest-history-meta">
                       <div style={{ fontWeight: 'bold' }}>Rating: {Math.round(c.rating)}</div>
-                      <div style={{ color: c.trendDirection === 'UP' ? 'var(--green)' : 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                      <div style={{ color: c.trendDirection === 'UP' ? 'var(--green)' : 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                         {c.trendDirection === 'UP' ? <ArrowUpRight size={14} /> : <ArrowRight size={14} style={{ transform: 'rotate(45deg)' }} />}
                         Rank {c.ranking.toLocaleString()}
                       </div>
@@ -1016,7 +1016,7 @@ function ContestsView({ progress }: { progress: ProgressState }) {
           ) : null}
         </section>
       ) : (
-        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', padding: 30, textAlign: 'center' }}>
+        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', textAlign: 'center' }}>
           <h2>Rating Tracker</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: 10 }}>Link your LeetCode username in your Profile to track your rating history.</p>
         </section>
