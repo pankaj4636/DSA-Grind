@@ -547,7 +547,7 @@ function ProblemRow({ problem, index, completed, bookmarked, note, frequency, to
       <div className={`problem-row ${completed ? 'solved' : ''}`}>
         <button className="check-button" onClick={toggleComplete} aria-pressed={completed} aria-label={completed ? 'Mark incomplete' : 'Mark complete'}>{completed ? <Check size={15} strokeWidth={3} /> : null}</button>
         <span className="problem-index">{String(index + 1).padStart(2, '0')}</span>
-        <div className="problem-name"><strong>{problem.title}{frequency && frequency >= 3 ? <span className="hot-pill" title={`On ${frequency} study sheets`}><Flame size={9} fill="currentColor" />{frequency}</span> : null}</strong><span>{completed && <i className="completed-dot" />} {completed ? 'Completed · ' : ''}{problem.company}</span></div>
+        <div className="problem-name"><strong><a href={problem.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{problem.title}</a>{frequency && frequency >= 3 ? <span className="hot-pill" title={`On ${frequency} study sheets`}><Flame size={9} fill="currentColor" />{frequency}</span> : null}</strong><span>{completed && <i className="completed-dot" />} {completed ? 'Completed · ' : ''}{problem.company}</span></div>
         <span className="pattern-pill">{problem.pattern}</span>
         <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
         <a className="bookmark-button" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(problem.title + ' leetcode solution neetcode')}`} target="_blank" rel="noreferrer" title="Watch explanation" aria-label="Watch video explanation"><PlaySquare size={17} /></a>
