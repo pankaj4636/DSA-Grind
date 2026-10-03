@@ -29,4 +29,5 @@ export interface ProgressState {
   bookmarked: string[]
   notes: Record<string, string>
   completionDates?: Record<string, string>
+  leetcodeUsername?: string
 }

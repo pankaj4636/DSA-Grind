@@ -21,8 +21,8 @@ const iconMap = {
 }
 
 const difficultyRank = { Easy: 0, Medium: 1, Hard: 2 }
-type View = 'home' | 'sheet' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile'
-type NavTarget = 'home' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile'
+type View = 'home' | 'sheet' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests'
+type NavTarget = 'home' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests'
 
 // Rewrite any legacy sheet-scoped ids ("slug:title") to the canonical
 // per-question id and drop duplicates, so old saved progress carries over and
@@ -41,7 +41,7 @@ function migrateProgress(raw: unknown): ProgressState {
     Object.entries(notes).forEach(([id, text]) => { newNotes[legacyToCanonical[id] ?? id] = text })
     return newNotes
   }
-  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes), completionDates: base.completionDates || {} }
+  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes), completionDates: base.completionDates || {}, leetcodeUsername: base.leetcodeUsername }
 }
 
 function useProgress() {
@@ -67,7 +67,7 @@ function useProgress() {
             const mergedBookmarked = Array.from(new Set([...local.bookmarked, ...(cloudData.bookmarked || [])]));
             const mergedNotes = { ...(local.notes || {}), ...(cloudData.notes || {}) };
             const mergedDates = { ...(local.completionDates || {}), ...(cloudData.completionDates || {}) };
-            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes, completionDates: mergedDates };
+            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes, completionDates: mergedDates, leetcodeUsername: cloudData.leetcodeUsername || local.leetcodeUsername };
           });
         }
       } catch (e) {
@@ -82,13 +82,18 @@ function useProgress() {
     if (user) {
       const syncToCloud = async () => {
         try {
-          await setDoc(doc(db, 'progress', user.uid), {
+          const payload = {
             ...state,
             completedCount: state.completed.length,
             displayName: user.displayName || 'Anonymous Developer',
             photoURL: user.photoURL || '',
             lastActive: new Date().toISOString(),
-          });
+          };
+          // Firebase doesn't allow undefined values
+          if (payload.leetcodeUsername === undefined) {
+            delete payload.leetcodeUsername;
+          }
+          await setDoc(doc(db, 'progress', user.uid), payload);
         } catch (e) {
           console.error("Error saving progress to cloud:", e);
         }
@@ -98,7 +103,7 @@ function useProgress() {
   }, [state, user]);
 
   const toggle = (key: keyof ProgressState, id: string) => {
-    if (key === 'notes' || key === 'completionDates') return;
+    if (key === 'notes' || key === 'completionDates' || key === 'leetcodeUsername') return;
     setState((current) => {
       const arr = current[key] as string[];
       const isCompleted = arr.includes(id);
@@ -114,6 +119,7 @@ function useProgress() {
     });
   }
   const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
+  const updateLeetcodeUsername = (username: string) => setState((current) => ({ ...current, leetcodeUsername: username }))
   
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -132,7 +138,7 @@ function useProgress() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  return { state, toggle, saveNote }
+  return { state, toggle, saveNote, updateLeetcodeUsername }
 }
 
 function Logo({ onClick }: { onClick?: () => void }) {
@@ -186,6 +192,7 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
         <button className={view === 'all' ? 'active' : ''} onClick={() => navigate('all')}>All Problems</button>
         <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => navigate('leaderboard')}>Leaderboard</button>
         <button className={view === 'mock' ? 'active' : ''} onClick={() => navigate('mock')}>Mock Interview</button>
+        <button className={view === 'contests' ? 'active' : ''} onClick={() => navigate('contests')}>Contests</button>
         <button className={view === 'profile' ? 'active' : ''} onClick={() => navigate('profile')}>Profile</button>
       </nav>
       <div className="top-actions">
@@ -227,6 +234,7 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <p className="nav-label second">Practice</p>
         <a className="nav-item" href="#daily" onClick={close}><Zap size={18} /> Daily challenge <span className="new-pill">NEW</span></a>
         <button className={view === 'mock' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('mock')}><Clock3 size={18} /> Mock interview</button>
+        <button className={view === 'contests' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('contests')}><CalendarDays size={18} /> Contests</button>
         <button className={view === 'all' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('all')}><ListChecks size={18} /> All problems</button>
         <div className="streak-card">
           <div className="streak-icon"><Flame size={19} fill="currentColor" /></div>
@@ -461,7 +469,7 @@ function Heatmap({ dates }: { dates: Record<string, string> }) {
   )
 }
 
-function ProfileView({ progress, onOpen }: { progress: ProgressState; onOpen: (sheet: Sheet) => void }) {
+function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: ProgressState; onOpen: (sheet: Sheet) => void; updateLeetcodeUsername: (name: string) => void }) {
   const { user, logout } = useAuth()
   const allProblems = sheets.flatMap((sheet) => sheet.problems)
   const solvedProblems = allProblems.filter((problem) => progress.completed.includes(problem.id))
@@ -488,7 +496,15 @@ function ProfileView({ progress, onOpen }: { progress: ProgressState; onOpen: (s
       <section className="all-hero" style={{ textAlign: 'center', paddingBottom: 40 }}>
         <img src={user.photoURL || ''} alt="avatar" style={{ width: 96, height: 96, borderRadius: '50%', margin: '0 auto 20px', display: 'block', border: '3px solid var(--orange)' }} />
         <h1>{user.displayName}</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>{user.email}</p>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 15 }}>{user.email}</p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+          <input 
+            value={progress.leetcodeUsername || ''} 
+            onChange={(e) => updateLeetcodeUsername(e.target.value)} 
+            placeholder="LeetCode Username (optional)"
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-soft)', color: 'var(--text)', outline: 'none' }}
+          />
+        </div>
         <button className="primary-button" style={{ margin: '0 auto' }} onClick={logout}>Sign Out</button>
       </section>
 
@@ -847,12 +863,174 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
 
 
 
+function ContestsView({ progress }: { progress: ProgressState }) {
+  const [now, setNow] = useState(new Date())
+  const [ratingData, setRatingData] = useState<any>(null)
+  const [loadingRating, setLoadingRating] = useState(false)
+  const [ratingError, setRatingError] = useState('')
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    if (!progress.leetcodeUsername) return
+    let isMounted = true;
+    setLoadingRating(true)
+    setRatingError('')
+    fetch(`https://alfa-leetcode-api.onrender.com/${progress.leetcodeUsername}/contest`)
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return;
+        if (data && data.contestRating) {
+          setRatingData(data)
+        } else {
+          setRatingError('User not found or no contest data.')
+        }
+      })
+      .catch(() => {
+        if (isMounted) setRatingError('Error fetching rating data. The API might be down temporarily.')
+      })
+      .finally(() => {
+        if (isMounted) setLoadingRating(false)
+      })
+      return () => { isMounted = false; }
+  }, [progress.leetcodeUsername])
+
+  const getNextWeekly = (date: Date) => {
+    const next = new Date(date)
+    next.setUTCHours(2, 30, 0, 0)
+    if (next.getUTCDay() === 0 && next > date) return next;
+    next.setUTCDate(next.getUTCDate() + ((7 - next.getUTCDay()) % 7 || 7))
+    return next
+  }
+  
+  const getNextBiweekly = (date: Date) => {
+    const next = new Date(date)
+    next.setUTCHours(14, 30, 0, 0)
+    const knownBiweekly = 1728743400000;
+    const msInTwoWeeks = 14 * 24 * 60 * 60 * 1000;
+    const diff = date.getTime() - knownBiweekly;
+    const cycles = Math.floor(diff / msInTwoWeeks);
+    const nextTime = knownBiweekly + (cycles + 1) * msInTwoWeeks;
+    return new Date(nextTime);
+  }
+
+  const nextWeekly = getNextWeekly(now)
+  const nextBiweekly = getNextBiweekly(now)
+
+  const formatCountdown = (target: Date) => {
+    const diff = target.getTime() - now.getTime()
+    if (diff < 0) return "Started!"
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
+    const m = Math.floor((diff / 1000 / 60) % 60)
+    const s = Math.floor((diff / 1000) % 60)
+    return `${d}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`
+  }
+
+  return (
+    <main className="main-content">
+      <section className="all-hero" style={{ textAlign: 'center' }}>
+        <CalendarDays size={48} style={{ margin: '0 auto 20px', color: 'var(--orange)' }} />
+        <h1>Contest Tracker</h1>
+        <p>Never miss a LeetCode contest. Put your skills to the test against the world.</p>
+      </section>
+
+      <section className="progress-dashboard-grid" style={{ maxWidth: 800, margin: '0 auto' }}>
+        <article className="analytics-card" style={{ padding: 30, textAlign: 'center' }}>
+          <div className="analytics-heading" style={{ justifyContent: 'center' }}>
+            <h2>Weekly Contest</h2>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '20px 0', color: 'var(--text)' }}>
+            {formatCountdown(nextWeekly)}
+          </div>
+          <p style={{ color: 'var(--text-muted)' }}>Every Sunday at 2:30 AM UTC</p>
+          <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="primary-button" style={{ display: 'inline-block', marginTop: 20 }}>View on LeetCode</a>
+        </article>
+
+        <article className="analytics-card" style={{ padding: 30, textAlign: 'center' }}>
+          <div className="analytics-heading" style={{ justifyContent: 'center' }}>
+            <h2>Biweekly Contest</h2>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '20px 0', color: 'var(--text)' }}>
+            {formatCountdown(nextBiweekly)}
+          </div>
+          <p style={{ color: 'var(--text-muted)' }}>Every other Saturday at 2:30 PM UTC</p>
+          <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="primary-button" style={{ display: 'inline-block', marginTop: 20 }}>View on LeetCode</a>
+        </article>
+      </section>
+
+      {progress.leetcodeUsername ? (
+        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', padding: 30 }}>
+          <div className="analytics-heading" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 15, marginBottom: 20, justifyContent: 'center' }}>
+            <h2>LeetCode Rating for {progress.leetcodeUsername}</h2>
+          </div>
+          {loadingRating ? (
+            <div className="empty-state"><h3>Loading rating data...</h3></div>
+          ) : ratingError ? (
+            <div className="empty-state"><h3 style={{ color: 'var(--red)' }}>{ratingError}</h3></div>
+          ) : ratingData ? (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, marginBottom: 30 }}>
+                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Rating</span>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10, color: 'var(--orange)' }}>
+                    {Math.round(ratingData.contestRating)}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Global Rank</span>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10 }}>
+                    #{ratingData.contestGlobalRanking.toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-app)', padding: 20, borderRadius: 10, textAlign: 'center', border: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Percentage</span>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 'bold', marginTop: 10, color: 'var(--green)' }}>
+                    {ratingData.contestTopPercentage}%
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ marginBottom: 15 }}>Recent Contests</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {ratingData.contestParticipation.slice().reverse().slice(0, 5).map((c: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div>
+                      <strong>{c.contest.title}</strong>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>Solved: {c.problemsSolved} / {c.totalProblems}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 'bold' }}>Rating: {Math.round(c.rating)}</div>
+                      <div style={{ color: c.trendDirection === 'UP' ? 'var(--green)' : 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                        {c.trendDirection === 'UP' ? <ArrowUpRight size={14} /> : <ArrowRight size={14} style={{ transform: 'rotate(45deg)' }} />}
+                        Rank {c.ranking.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : (
+        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', padding: 30, textAlign: 'center' }}>
+          <h2>Rating Tracker</h2>
+          <p style={{ color: 'var(--text-muted)', marginTop: 10 }}>Link your LeetCode username in your Profile to track your rating history.</p>
+        </section>
+      )}
+    </main>
+  )
+}
+
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('dsagrind-theme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [view, setView] = useState<View>('home')
   const [activeSheet, setActiveSheet] = useState<Sheet | null>(null)
-  const { state: progress, toggle, saveNote } = useProgress()
+  const { state: progress, toggle, saveNote, updateLeetcodeUsername } = useProgress()
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('dsagrind-theme', theme) }, [theme])
   useEffect(() => {
@@ -874,7 +1052,8 @@ export default function App() {
       {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'leaderboard' && <LeaderboardView />}
       {view === 'mock' && <MockInterviewView progress={progress} toggle={toggle} saveNote={saveNote} />}
-      {view === 'profile' && <ProfileView progress={progress} onOpen={openSheet} />}
+      {view === 'contests' && <ContestsView progress={progress} />}
+      {view === 'profile' && <ProfileView progress={progress} onOpen={openSheet} updateLeetcodeUsername={updateLeetcodeUsername} />}
       <footer><Logo /><p>Build consistency. Learn patterns. Get the offer.</p><span>© 2026 DSA Grind</span></footer>
     </div>
   )
