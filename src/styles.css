@@ -2380,7 +2380,7 @@ button {
    position: relative;
    min-height: 68px;
    display: grid;
-   grid-template-columns: 28px 30px minmax(190px, 1fr) 135px 75px 30px 74px;
+   grid-template-columns: 28px 30px minmax(190px, 1fr) 135px 75px 30px 30px 30px 74px;
    gap: 10px;
    align-items: center;
    padding: 9px 16px;
@@ -2944,7 +2944,7 @@ footer span:last-child {
    }
 
    .problem-row {
-      grid-template-columns: 28px 24px minmax(150px, 1fr) 75px 30px 65px;
+      grid-template-columns: 28px 24px minmax(150px, 1fr) 75px 30px 30px 30px 65px;
    }
 
    .pattern-pill {
@@ -3100,7 +3100,7 @@ footer span:last-child {
    }
 
    .problem-row {
-      grid-template-columns: 24px minmax(120px, 1fr) 67px 27px;
+      grid-template-columns: 24px minmax(120px, 1fr) 67px 27px 27px 27px;
       gap: 7px;
       padding: 11px 12px;
    }
