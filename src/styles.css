@@ -3391,3 +3391,47 @@ footer span:last-child {
     padding: 12px 10px;
   }
 }
+
+.owner-leetcode-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.owner-leetcode-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 3%, transparent);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.owner-leetcode-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent), 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.owner-leetcode-link .leetcode-logo {
+  width: 17px;
+  height: 17px;
+  filter: brightness(0);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-theme='dark'] .owner-leetcode-link .leetcode-logo {
+  filter: brightness(1) invert(1);
+}
+
+.owner-leetcode-link:hover .leetcode-logo {
+  transform: scale(1.2) rotate(-6deg);
+}

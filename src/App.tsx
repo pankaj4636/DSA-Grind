@@ -120,7 +120,7 @@ function useProgress() {
   }
   const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
   const updateLeetcodeUsername = (username: string) => setState((current) => ({ ...current, leetcodeUsername: username }))
-  
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'DSA_GRIND_SYNC' && Array.isArray(event.data.completed)) {
@@ -412,7 +412,17 @@ function HomeView({ completed, onOpen, onBrowseAll }: { completed: string[]; onO
         </div>
         <div className="glass-grid">{visibleSheets.map((sheet) => <SheetCard key={sheet.slug} sheet={sheet} completed={completed} onOpen={() => onOpen(sheet)} />)}</div>
       </section>
-      <section className="quote-card"><Star size={19} fill="currentColor" /><blockquote>“Jab tak phodenge nahi tab tak chhodenge nahi”</blockquote><span>— Owner</span></section>
+      <section className="quote-card">
+        <Star size={19} fill="currentColor" />
+        <blockquote>“Jab tak phodenge nahi tab tak chhodenge nahi”</blockquote>
+        <span>— Owner</span>
+        <div className="owner-leetcode-container">
+          <a href="https://leetcode.com/u/pankaj4396/" target="_blank" rel="noreferrer" className="owner-leetcode-link">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png" alt="LeetCode" className="leetcode-logo" />
+            <span className="leetcode-text">pankaj4396</span>
+          </a>
+        </div>
+      </section>
     </main>
   )
 }
@@ -423,23 +433,23 @@ function Heatmap({ dates }: { dates: Record<string, string> }) {
     Object.values(dates).forEach(d => { map.set(d, (map.get(d) || 0) + 1) })
     return map
   }, [dates])
-  
-  const days = 147; 
+
+  const days = 147;
   const today = new Date();
   const squares = [];
-  
+
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const count = counts.get(dateStr) || 0;
-    
+
     let level = 0;
     if (count > 0) level = 1;
     if (count > 3) level = 2;
     if (count > 6) level = 3;
     if (count > 9) level = 4;
-    
+
     squares.push({ date: dateStr, count, level, isToday: i === 0 });
   }
 
@@ -448,9 +458,9 @@ function Heatmap({ dates }: { dates: Record<string, string> }) {
       <div className="heatmap-scroll">
         <div className="heatmap-grid">
           {squares.map((sq, idx) => (
-            <div 
-              key={`${sq.date}-${idx}`} 
-              className={`heatmap-square level-${sq.level} ${sq.isToday ? 'today' : ''}`} 
+            <div
+              key={`${sq.date}-${idx}`}
+              className={`heatmap-square level-${sq.level} ${sq.isToday ? 'today' : ''}`}
               title={`${sq.count} problems on ${sq.date}`}
             />
           ))}
@@ -486,7 +496,7 @@ function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: P
     return { ...acc, [problem.category]: { total: current.total + 1, solved: current.solved + Number(progress.completed.includes(problem.id)) } }
   }, {})
   const topTopics = Object.entries(topicMap).sort((a, b) => b[1].total - a[1].total).slice(0, 7)
-  
+
   const nextMilestone = Math.max(25, Math.ceil((solved + 1) / 25) * 25)
 
   if (!user) return <main className="main-content"><div className="empty-state"><h3>Not logged in</h3></div></main>
@@ -498,9 +508,9 @@ function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: P
         <h1>{user.displayName}</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: 15 }}>{user.email}</p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-          <input 
-            value={progress.leetcodeUsername || ''} 
-            onChange={(e) => updateLeetcodeUsername(e.target.value)} 
+          <input
+            value={progress.leetcodeUsername || ''}
+            onChange={(e) => updateLeetcodeUsername(e.target.value)}
             placeholder="LeetCode Username (optional)"
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-soft)', color: 'var(--text)', outline: 'none' }}
           />
@@ -536,7 +546,7 @@ function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: P
 function ProblemRow({ problem, index, completed, bookmarked, note, frequency, toggleComplete, toggleBookmark, onSaveNote }: { problem: Problem; index: number; completed: boolean; bookmarked: boolean; note?: string; frequency?: number; toggleComplete: () => void; toggleBookmark: () => void; onSaveNote?: (text: string) => void }) {
   const [editingNote, setEditingNote] = useState(false)
   const [noteText, setNoteText] = useState(note || '')
-  
+
   const handleSave = () => {
     onSaveNote?.(noteText)
     setEditingNote(false)
@@ -695,7 +705,7 @@ function LeaderboardView() {
         const q = collection(db, 'progress')
         const snapshot = await getDocs(q)
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-        
+
         // Sort in memory so users without 'completedCount' are still included
         data.sort((a: any, b: any) => {
           const countA = a.completedCount ?? (Array.isArray(a.completed) ? a.completed.length : 0);
@@ -750,7 +760,7 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
   const [company, setCompany] = useState('All')
   const [sessionProblems, setSessionProblems] = useState<Problem[]>([])
   const [timeLeft, setTimeLeft] = useState(45 * 60)
-  
+
   const allProblems = useMemo(() => {
     const seen = new Set<string>()
     return sheets.flatMap((sheet) => sheet.problems).filter((problem) => !seen.has(problem.id) && seen.add(problem.id))
@@ -760,11 +770,11 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
   const startInterview = () => {
     let pool = company === 'All' ? allProblems : allProblems.filter(p => p.companies.includes(company))
     if (pool.length < 2) pool = allProblems // fallback if not enough problems
-    
+
     // Pick 1 medium and 1 hard, or just 2 random if not possible
     let mediums = pool.filter(p => p.difficulty === 'Medium')
     let hards = pool.filter(p => p.difficulty === 'Hard')
-    
+
     let p1 = mediums.length ? mediums[Math.floor(Math.random() * mediums.length)] : pool[Math.floor(Math.random() * pool.length)]
     pool = pool.filter(p => p.id !== p1.id)
     hards = hards.filter(p => p.id !== p1.id)
@@ -895,7 +905,7 @@ function ContestsView({ progress }: { progress: ProgressState }) {
       .finally(() => {
         if (isMounted) setLoadingRating(false)
       })
-      return () => { isMounted = false; }
+    return () => { isMounted = false; }
   }, [progress.leetcodeUsername])
 
   const getNextWeekly = (date: Date) => {
@@ -905,7 +915,7 @@ function ContestsView({ progress }: { progress: ProgressState }) {
     next.setUTCDate(next.getUTCDate() + ((7 - next.getUTCDay()) % 7 || 7))
     return next
   }
-  
+
   const getNextBiweekly = (date: Date) => {
     const next = new Date(date)
     next.setUTCHours(14, 30, 0, 0)
