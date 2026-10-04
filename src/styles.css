@@ -3452,6 +3452,7 @@ footer span:last-child {
 .gradient-text {
   background: linear-gradient(135deg, var(--text) 0%, color-mix(in srgb, var(--text) 50%, transparent) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -3834,6 +3835,7 @@ footer span:last-child {
   margin-bottom: 16px;
   background: linear-gradient(135deg, #111 0%, #6d55dd 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -3953,6 +3955,7 @@ footer span:last-child {
   font-variant-numeric: tabular-nums;
   background: linear-gradient(135deg, var(--text), var(--muted));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
@@ -3963,6 +3966,7 @@ footer span:last-child {
 .mock-timer.urgent {
   background: linear-gradient(135deg, #ff4d4f, #cf1322);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: pulseUrgent 1s infinite;
 }
