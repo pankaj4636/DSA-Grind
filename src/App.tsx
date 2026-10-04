@@ -818,44 +818,47 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
   return (
     <main className="main-content">
       {phase === 'setup' && (
-        <>
-          <section className="all-hero">
-            <span className="section-kicker">MOCK INTERVIEW</span>
-            <h1>Test your skills</h1>
-            <p>Simulate a real 45-minute technical interview. We'll give you 2 random problems to solve under time pressure.</p>
-          </section>
-          <div className="analytics-card" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: 40 }}>
-            <Clock3 size={48} style={{ margin: '0 auto 20px', color: 'var(--orange)' }} />
-            <h2 style={{ marginBottom: 20 }}>Configure your session</h2>
-            <div style={{ marginBottom: 30 }}>
-              <label style={{ display: 'block', marginBottom: 10, fontWeight: 'bold' }}>Target Company (Optional)</label>
-              <div className="toolbar-select" style={{ display: 'inline-flex' }}>
-                <select value={company} onChange={(event) => setCompany(event.target.value)}>
-                  <option>All</option>
-                  {companies.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <ChevronDown size={15} />
-              </div>
+        <div style={{ padding: '0 20px', maxWidth: 1000, margin: '0 auto' }}>
+          <section className="mock-interview-hero">
+            <div className="mock-icon-ring">
+              <BrainCircuit strokeWidth={2.5} />
             </div>
-            <button className="primary-button" style={{ fontSize: '1.1rem', padding: '12px 24px' }} onClick={startInterview}>
+            <h1 className="mock-title">Mock Interview</h1>
+            <p style={{ fontSize: '1.2rem', color: 'var(--muted)', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
+              Simulate a real 45-minute technical interview. We'll give you two carefully selected problems to solve under time pressure.
+            </p>
+          </section>
+
+          <section className="mock-setup-card">
+            <label className="mock-setup-label">Target Company (Optional)</label>
+            <div className="mock-select-wrap">
+              <select className="mock-select" value={company} onChange={(event) => setCompany(event.target.value)}>
+                <option value="All">Any Company</option>
+                {companies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <ChevronDown size={20} />
+            </div>
+            <button className="mock-start-btn" onClick={startInterview}>
+              <PlaySquare size={22} fill="currentColor" strokeWidth={1} />
               Start 45-min Interview
             </button>
-          </div>
-        </>
+          </section>
+        </div>
       )}
 
       {phase === 'running' && (
-        <>
-          <div className="all-results-head" style={{ justifyContent: 'space-between', paddingBottom: 20, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div className="mock-running-header">
             <div>
               <span className="section-kicker">SESSION IN PROGRESS</span>
               <h2>Solve both problems</h2>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: timeLeft < 300 ? 'var(--red)' : 'var(--text)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+              <div className={`mock-timer ${timeLeft < 300 ? 'urgent' : ''}`}>
+                <Clock3 size={36} color={timeLeft < 300 ? '#ff4d4f' : 'var(--muted)'} strokeWidth={2.5} />
                 {formatTime(timeLeft)}
               </div>
-              <button className="ghost-button" onClick={() => setPhase('summary')}>End Early</button>
+              <button className="mock-end-btn" onClick={() => setPhase('summary')}>End Early</button>
             </div>
           </div>
           <div className="problem-list standalone">
@@ -863,23 +866,30 @@ function MockInterviewView({ progress, toggle, saveNote }: { progress: ProgressS
               <ProblemRow key={p.id} problem={p} index={index} completed={progress.completed.includes(p.id)} bookmarked={progress.bookmarked.includes(p.id)} note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {phase === 'summary' && (
-        <>
-          <section className="all-hero" style={{ textAlign: 'center' }}>
-            <Trophy size={48} style={{ margin: '0 auto 20px', color: 'var(--green)' }} />
-            <h1>Session Complete</h1>
-            <p>Great job practicing under pressure. Review your solutions and notes below.</p>
-            <button className="ghost-button" style={{ marginTop: 20 }} onClick={() => setPhase('setup')}>Start Another</button>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <section className="mock-interview-hero" style={{ background: 'radial-gradient(140% 140% at 50% 10%, rgba(53, 169, 120, 0.15) 0%, rgba(20, 19, 25, 0) 50%)', borderColor: 'rgba(53, 169, 120, 0.2)', boxShadow: '0 24px 48px rgba(53, 169, 120, 0.08)' }}>
+            <div className="mock-icon-ring" style={{ background: 'linear-gradient(135deg, rgba(53, 169, 120, 0.2), rgba(53, 169, 120, 0.05))' }}>
+              <Trophy strokeWidth={2.5} style={{ color: '#35a978', filter: 'drop-shadow(0 4px 12px rgba(53, 169, 120, 0.4))' }} />
+              <style>{`.mock-icon-ring::before { border-color: rgba(53, 169, 120, 0.3) !important; }`}</style>
+            </div>
+            <h1 className="mock-title" style={{ background: 'linear-gradient(135deg, #35a978 0%, #2a8a61 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Session Complete</h1>
+            <p style={{ fontSize: '1.2rem', color: 'var(--muted)', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
+              Great job practicing under pressure. Review your solutions and notes below.
+            </p>
+            <button className="hero-cta ghost" style={{ marginTop: 40, borderRadius: '16px', height: '56px', padding: '0 32px', fontSize: '1.1rem' }} onClick={() => setPhase('setup')}>
+              Start Another Session
+            </button>
           </section>
           <div className="problem-list standalone">
             {sessionProblems.map((p, index) => (
               <ProblemRow key={p.id} problem={p} index={index} completed={progress.completed.includes(p.id)} bookmarked={progress.bookmarked.includes(p.id)} note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />
             ))}
           </div>
-        </>
+        </div>
       )}
     </main>
   )
