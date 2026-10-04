@@ -228,7 +228,6 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <p className="nav-label">Workspace</p>
         <button className={view === 'home' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('home')}><Grid2X2 size={18} /> Overview</button>
         <a className="nav-item" href="#sheets" onClick={close}><BookOpen size={18} /> Study sheets</a>
-        <button className={view === 'bookmarks' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('bookmarks')}><Bookmark size={18} /> Bookmarks</button>
         <button className={view === 'leaderboard' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('leaderboard')}><Trophy size={18} /> Leaderboard</button>
         <button className={view === 'profile' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('profile')}><BarChart3 size={18} /> Profile</button>
         <p className="nav-label second">Practice</p>
@@ -479,7 +478,7 @@ function Heatmap({ dates }: { dates: Record<string, string> }) {
   )
 }
 
-function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: ProgressState; onOpen: (sheet: Sheet) => void; updateLeetcodeUsername: (name: string) => void }) {
+function ProfileView({ progress, onOpen, updateLeetcodeUsername, toggle, saveNote }: { progress: ProgressState; onOpen: (sheet: Sheet) => void; updateLeetcodeUsername: (name: string) => void; toggle: (key: keyof ProgressState, id: string) => void; saveNote: (id: string, text: string) => void }) {
   const { user, logout } = useAuth()
   const allProblems = sheets.flatMap((sheet) => sheet.problems)
   const solvedProblems = allProblems.filter((problem) => progress.completed.includes(problem.id))
@@ -539,6 +538,21 @@ function ProfileView({ progress, onOpen, updateLeetcodeUsername }: { progress: P
       </section>
 
       <section className="sheet-progress-section"><div className="section-heading"><div><span className="section-kicker">ROADMAP PROGRESS</span><h2>Progress by sheet</h2><p>Continue exactly where you left off.</p></div></div><div className="progress-sheet-grid">{sheets.map((sheet) => { const count = sheet.problems.filter(p => progress.completed.includes(p.id)).length; const percent = sheet.problems.length ? Math.round(count / sheet.problems.length * 100) : 0; const Icon = iconMap[sheet.icon as keyof typeof iconMap] || Code2; return <button className={`progress-sheet-item accent-${sheet.accent}`} key={sheet.slug} onClick={() => onOpen(sheet)}><span className="progress-sheet-icon"><Icon size={19} /></span><span className="progress-sheet-copy"><strong>{sheet.title}</strong><small>{count} of {sheet.problems.length} completed</small><span className="progress-sheet-track"><i style={{ width: `${percent}%` }} /></span></span><span className="sheet-percent">{percent}%</span><ArrowRight size={17} /></button> })}</div></section>
+      
+      <section className="sheet-progress-section" style={{ marginTop: 40 }}>
+        <div className="section-heading">
+          <div><span className="section-kicker">YOUR COLLECTION</span><h2>Bookmarked problems</h2><p>Everything you saved for another focused practice session.</p></div>
+        </div>
+        <div className="problem-list standalone">
+          {(() => {
+            const bookmarked = sheets.flatMap(s => s.problems).filter(p => progress.bookmarked.includes(p.id));
+            const uniqueBookmarked = Array.from(new Map(bookmarked.map(p => [p.id, p])).values());
+            return uniqueBookmarked.length ? uniqueBookmarked.map((p, i) => (
+              <ProblemRow key={p.id} problem={p} index={i} completed={progress.completed.includes(p.id)} bookmarked note={progress.notes?.[p.id]} toggleComplete={() => toggle('completed', p.id)} toggleBookmark={() => toggle('bookmarked', p.id)} onSaveNote={(text) => saveNote(p.id, text)} />
+            )) : <div className="empty-state"><Bookmark size={29} /><h3>No bookmarks yet</h3><p>Save problems from any sheet and they’ll appear here.</p></div>
+          })()}
+        </div>
+      </section>
     </main>
   )
 }
@@ -930,105 +944,138 @@ function ContestsView({ progress }: { progress: ProgressState }) {
   const nextWeekly = getNextWeekly(now)
   const nextBiweekly = getNextBiweekly(now)
 
-  const formatCountdown = (target: Date) => {
+  const formatCountdownData = (target: Date) => {
     const diff = target.getTime() - now.getTime()
-    if (diff < 0) return "Started!"
-    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
-    const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
-    const m = Math.floor((diff / 1000 / 60) % 60)
-    const s = Math.floor((diff / 1000) % 60)
-    return `${d}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`
+    if (diff < 0) return { d: 0, h: 0, m: 0, s: 0, started: true }
+    return {
+      d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      m: Math.floor((diff / 1000 / 60) % 60),
+      s: Math.floor((diff / 1000) % 60),
+      started: false
+    }
+  }
+
+  const CountdownDisplay = ({ data }: { data: ReturnType<typeof formatCountdownData> }) => {
+    if (data.started) return <div className="countdown-started">Contest Started!</div>
+    return (
+      <div className="countdown-display">
+        <div className="cd-box"><strong>{data.d}</strong><span>Days</span></div><div className="cd-sep">:</div>
+        <div className="cd-box"><strong>{data.h.toString().padStart(2, '0')}</strong><span>Hours</span></div><div className="cd-sep">:</div>
+        <div className="cd-box"><strong>{data.m.toString().padStart(2, '0')}</strong><span>Mins</span></div><div className="cd-sep">:</div>
+        <div className="cd-box"><strong>{data.s.toString().padStart(2, '0')}</strong><span>Secs</span></div>
+      </div>
+    )
   }
 
   return (
     <main className="main-content">
-      <section className="all-hero" style={{ textAlign: 'center' }}>
-        <CalendarDays size={48} style={{ margin: '0 auto 20px', color: 'var(--orange)' }} />
-        <h1>Contest Tracker</h1>
+      <section className="all-hero contest-hero" style={{ textAlign: 'center', paddingBottom: 50 }}>
+        <div className="hero-icon-wrap"><CalendarDays size={42} strokeWidth={2.5} /></div>
+        <h1 className="gradient-text">Contest Tracker</h1>
         <p>Never miss a LeetCode contest. Put your skills to the test against the world.</p>
       </section>
 
-      <section className="progress-dashboard-grid" style={{ maxWidth: 800, margin: '17px auto 0' }}>
-        <article className="analytics-card" style={{ textAlign: 'center' }}>
-          <div className="analytics-heading" style={{ justifyContent: 'center' }}>
+      <section className="progress-dashboard-grid contest-grid" style={{ maxWidth: 880, margin: '-20px auto 30px', position: 'relative', zIndex: 10 }}>
+        <article className="glass-card contest-card accent-blue" style={{ cursor: 'default' }}>
+          <div className="contest-card-bg glow-blue" />
+          <div className="contest-card-content">
+            <span className="contest-badge">UPCOMING</span>
             <h2>Weekly Contest</h2>
+            <p className="contest-time"><Clock3 size={14} /> Every Sunday at 2:30 AM UTC</p>
+            <CountdownDisplay data={formatCountdownData(nextWeekly)} />
+            <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="contest-cta button-blue">Participate <ArrowUpRight size={16} /></a>
           </div>
-          <div className="contest-countdown">
-            {formatCountdown(nextWeekly)}
-          </div>
-          <p style={{ color: 'var(--text-muted)' }}>Every Sunday at 2:30 AM UTC</p>
-          <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="primary-button" style={{ display: 'inline-block', marginTop: 20 }}>View on LeetCode</a>
         </article>
 
-        <article className="analytics-card" style={{ textAlign: 'center' }}>
-          <div className="analytics-heading" style={{ justifyContent: 'center' }}>
+        <article className="glass-card contest-card accent-violet" style={{ cursor: 'default' }}>
+          <div className="contest-card-bg glow-violet" />
+          <div className="contest-card-content">
+            <span className="contest-badge violet">UPCOMING</span>
             <h2>Biweekly Contest</h2>
+            <p className="contest-time"><Clock3 size={14} /> Every other Saturday at 2:30 PM UTC</p>
+            <CountdownDisplay data={formatCountdownData(nextBiweekly)} />
+            <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="contest-cta button-violet">Participate <ArrowUpRight size={16} /></a>
           </div>
-          <div className="contest-countdown">
-            {formatCountdown(nextBiweekly)}
-          </div>
-          <p style={{ color: 'var(--text-muted)' }}>Every other Saturday at 2:30 PM UTC</p>
-          <a href="https://leetcode.com/contest/" target="_blank" rel="noreferrer" className="primary-button" style={{ display: 'inline-block', marginTop: 20 }}>View on LeetCode</a>
         </article>
       </section>
 
       {progress.leetcodeUsername ? (
-        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto' }}>
-          <div className="analytics-heading" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 15, marginBottom: 20, justifyContent: 'center' }}>
-            <h2>LeetCode Rating for {progress.leetcodeUsername}</h2>
+        <section className="rating-dashboard" style={{ maxWidth: 880, margin: '40px auto 60px' }}>
+          <div className="rating-header">
+            <h2><Trophy size={22} className="orange-icon" /> Rating Profile</h2>
+            <span className="rating-user">@{progress.leetcodeUsername}</span>
           </div>
           {loadingRating ? (
-            <div className="empty-state"><h3>Loading rating data...</h3></div>
+            <div className="empty-state">
+              <div className="spinner" />
+              <h3>Fetching rating data...</h3>
+            </div>
           ) : ratingError ? (
             <div className="empty-state"><h3 style={{ color: 'var(--red)' }}>{ratingError}</h3></div>
           ) : ratingData ? (
-            <div>
+            <div className="rating-content">
               <div className="rating-stats-grid">
-                <div className="rating-stat-box">
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Rating</span>
-                  <div className="rating-stat-value" style={{ color: 'var(--orange)' }}>
-                    {Math.round(ratingData.contestRating)}
+                <div className="rating-stat-box premium-box">
+                  <div className="rs-icon-wrap"><Zap size={20} /></div>
+                  <div className="rs-details">
+                    <span>Current Rating</span>
+                    <strong className="gradient-orange">{Math.round(ratingData.contestRating)}</strong>
                   </div>
                 </div>
-                <div className="rating-stat-box">
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Global Rank</span>
-                  <div className="rating-stat-value">
-                    #{ratingData.contestGlobalRanking.toLocaleString()}
+                <div className="rating-stat-box premium-box">
+                  <div className="rs-icon-wrap blue"><Target size={20} /></div>
+                  <div className="rs-details">
+                    <span>Global Rank</span>
+                    <strong>#{ratingData.contestGlobalRanking.toLocaleString()}</strong>
                   </div>
                 </div>
-                <div className="rating-stat-box">
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Top Percentage</span>
-                  <div className="rating-stat-value" style={{ color: 'var(--green)' }}>
-                    {ratingData.contestTopPercentage}%
+                <div className="rating-stat-box premium-box">
+                  <div className="rs-icon-wrap green"><Award size={20} /></div>
+                  <div className="rs-details">
+                    <span>Top Percentage</span>
+                    <strong className="gradient-green">{ratingData.contestTopPercentage}%</strong>
                   </div>
                 </div>
               </div>
 
-              <h3 style={{ marginBottom: 15 }}>Recent Contests</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ratingData.contestParticipation.slice().reverse().slice(0, 5).map((c: any, i: number) => (
-                  <div key={i} className="contest-history-row">
-                    <div>
-                      <strong>{c.contest.title}</strong>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>Solved: {c.problemsSolved} / {c.totalProblems}</div>
-                    </div>
-                    <div className="contest-history-meta">
-                      <div style={{ fontWeight: 'bold' }}>Rating: {Math.round(c.rating)}</div>
-                      <div style={{ color: c.trendDirection === 'UP' ? 'var(--green)' : 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {c.trendDirection === 'UP' ? <ArrowUpRight size={14} /> : <ArrowRight size={14} style={{ transform: 'rotate(45deg)' }} />}
-                        Rank {c.ranking.toLocaleString()}
+              <div className="rating-history-section">
+                <h3>Recent Performances</h3>
+                <div className="contest-history-list">
+                  {ratingData.contestParticipation.slice().reverse().slice(0, 5).map((c: any, i: number, arr: any[]) => {
+                    const prev = arr[i+1];
+                    const diff = prev ? c.rating - prev.rating : 0;
+                    return (
+                    <div key={i} className="contest-history-row premium-row">
+                      <div className="ch-left">
+                        <div className="ch-icon"><CalendarDays size={18} /></div>
+                        <div className="ch-info">
+                          <strong>{c.contest.title}</strong>
+                          <span>Solved {c.problemsSolved} of {c.totalProblems} problems</span>
+                        </div>
+                      </div>
+                      <div className="ch-right">
+                        <div className="ch-rating-info">
+                          <strong>{Math.round(c.rating)}</strong>
+                          <span className={`ch-trend ${c.trendDirection === 'UP' ? 'up' : 'down'}`}>
+                            {c.trendDirection === 'UP' ? <ArrowUpRight size={13} /> : <ArrowRight size={13} style={{ transform: 'rotate(45deg)' }} />}
+                            {diff > 0 ? '+' : ''}{Math.round(diff)}
+                          </span>
+                        </div>
+                        <div className="ch-rank">Rank {c.ranking.toLocaleString()}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )})}
+                </div>
               </div>
             </div>
           ) : null}
         </section>
       ) : (
-        <section className="analytics-card" style={{ maxWidth: 800, margin: '20px auto', textAlign: 'center' }}>
-          <h2>Rating Tracker</h2>
-          <p style={{ color: 'var(--text-muted)', marginTop: 10 }}>Link your LeetCode username in your Profile to track your rating history.</p>
+        <section className="analytics-card rating-promo" style={{ maxWidth: 880, margin: '40px auto 60px', textAlign: 'center' }}>
+          <div className="promo-icon"><Trophy size={36} /></div>
+          <h2>Track Your Global Rating</h2>
+          <p>Link your LeetCode username in your Profile to visualize your performance history, track rating trends, and see your global standing after every contest.</p>
         </section>
       )}
     </main>
@@ -1058,12 +1105,11 @@ export default function App() {
       <Sidebar open={sidebarOpen} close={() => setSidebarOpen(false)} view={view} setView={changeView} />
       {view === 'home' && <HomeView completed={progress.completed} onOpen={openSheet} onBrowseAll={() => changeView('all')} />}
       {view === 'sheet' && activeSheet && <SheetView sheet={activeSheet} progress={progress} toggle={toggle} saveNote={saveNote} onBack={() => changeView('home')} />}
-      {view === 'bookmarks' && <BookmarksView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'leaderboard' && <LeaderboardView />}
       {view === 'mock' && <MockInterviewView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'contests' && <ContestsView progress={progress} />}
-      {view === 'profile' && <ProfileView progress={progress} onOpen={openSheet} updateLeetcodeUsername={updateLeetcodeUsername} />}
+      {view === 'profile' && <ProfileView progress={progress} onOpen={openSheet} updateLeetcodeUsername={updateLeetcodeUsername} toggle={toggle} saveNote={saveNote} />}
       <footer><Logo /><p>Build consistency. Learn patterns. Get the offer.</p><span>© 2026 DSA Grind</span></footer>
     </div>
   )
