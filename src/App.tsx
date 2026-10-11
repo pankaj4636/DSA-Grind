@@ -10,6 +10,7 @@ import type { Problem, ProgressState, Sheet } from './types'
 import { useAuth } from './lib/AuthContext'
 import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { db } from './lib/firebase'
+import { RoadmapView } from './RoadmapView'
 const sheets = loadSheets()
 const STORAGE_KEY = 'dsagrind-progress-v1'
 
@@ -21,8 +22,8 @@ const iconMap = {
 }
 
 const difficultyRank = { Easy: 0, Medium: 1, Hard: 2 }
-type View = 'home' | 'sheet' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests'
-type NavTarget = 'home' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests'
+type View = 'home' | 'sheet' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests' | 'roadmap'
+type NavTarget = 'home' | 'bookmarks' | 'all' | 'leaderboard' | 'mock' | 'profile' | 'contests' | 'roadmap'
 
 // Rewrite any legacy sheet-scoped ids ("slug:title") to the canonical
 // per-question id and drop duplicates, so old saved progress carries over and
@@ -41,7 +42,16 @@ function migrateProgress(raw: unknown): ProgressState {
     Object.entries(notes).forEach(([id, text]) => { newNotes[legacyToCanonical[id] ?? id] = text })
     return newNotes
   }
-  return { completed: remap(base.completed), bookmarked: remap(base.bookmarked), notes: remapNotes(base.notes), completionDates: base.completionDates || {}, leetcodeUsername: base.leetcodeUsername }
+  return {
+    completed: remap(base.completed),
+    bookmarked: remap(base.bookmarked),
+    notes: remapNotes(base.notes),
+    completionDates: base.completionDates || {},
+    leetcodeUsername: base.leetcodeUsername,
+    solvedIndependently: remap(base.solvedIndependently),
+    mistakes: remap(base.mistakes),
+    day7RevisionTasks: base.day7RevisionTasks || [],
+  }
 }
 
 function useProgress() {
@@ -50,7 +60,7 @@ function useProgress() {
     try {
       return migrateProgress(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'))
     } catch {
-      return { completed: [], bookmarked: [], notes: {}, completionDates: {} }
+      return { completed: [], bookmarked: [], notes: {}, completionDates: {}, solvedIndependently: [], mistakes: [], day7RevisionTasks: [] }
     }
   })
 
@@ -67,7 +77,19 @@ function useProgress() {
             const mergedBookmarked = Array.from(new Set([...local.bookmarked, ...(cloudData.bookmarked || [])]));
             const mergedNotes = { ...(local.notes || {}), ...(cloudData.notes || {}) };
             const mergedDates = { ...(local.completionDates || {}), ...(cloudData.completionDates || {}) };
-            return { completed: mergedCompleted, bookmarked: mergedBookmarked, notes: mergedNotes, completionDates: mergedDates, leetcodeUsername: cloudData.leetcodeUsername || local.leetcodeUsername };
+            const mergedIndependent = Array.from(new Set([...(local.solvedIndependently || []), ...(cloudData.solvedIndependently || [])]));
+            const mergedMistakes = Array.from(new Set([...(local.mistakes || []), ...(cloudData.mistakes || [])]));
+            const mergedDay7 = Array.from(new Set([...(local.day7RevisionTasks || []), ...(cloudData.day7RevisionTasks || [])]));
+            return {
+              completed: mergedCompleted,
+              bookmarked: mergedBookmarked,
+              notes: mergedNotes,
+              completionDates: mergedDates,
+              leetcodeUsername: cloudData.leetcodeUsername || local.leetcodeUsername,
+              solvedIndependently: mergedIndependent,
+              mistakes: mergedMistakes,
+              day7RevisionTasks: mergedDay7,
+            };
           });
         }
       } catch (e) {
@@ -105,7 +127,7 @@ function useProgress() {
   const toggle = (key: keyof ProgressState, id: string) => {
     if (key === 'notes' || key === 'completionDates' || key === 'leetcodeUsername') return;
     setState((current) => {
-      const arr = current[key] as string[];
+      const arr = (current[key] || []) as string[];
       const isCompleted = arr.includes(id);
       const nextArr = isCompleted ? arr.filter((item) => item !== id) : [...arr, id];
       const updates: Partial<ProgressState> = { [key]: nextArr };
@@ -118,6 +140,60 @@ function useProgress() {
       return { ...current, ...updates };
     });
   }
+
+  const toggleIndependent = (id: string) => {
+    setState((current) => {
+      const arr = current.solvedIndependently || []
+      const isIndep = arr.includes(id)
+      const nextArr = isIndep ? arr.filter((item) => item !== id) : [...arr, id]
+      const completed = current.completed || []
+      const dates = { ...(current.completionDates || {}) }
+      let nextCompleted = completed
+      if (!isIndep && !completed.includes(id)) {
+        nextCompleted = [...completed, id]
+        dates[id] = new Date().toISOString().split('T')[0]
+      }
+      return {
+        ...current,
+        solvedIndependently: nextArr,
+        completed: nextCompleted,
+        completionDates: dates,
+      }
+    })
+  }
+
+  const toggleMistake = (id: string) => {
+    setState((current) => {
+      const arr = current.mistakes || []
+      const isMistake = arr.includes(id)
+      const nextArr = isMistake ? arr.filter((item) => item !== id) : [...arr, id]
+      return { ...current, mistakes: nextArr }
+    })
+  }
+
+  const toggleDay7Task = (taskId: string) => {
+    setState((current) => {
+      const arr = current.day7RevisionTasks || []
+      const isChecked = arr.includes(taskId)
+      const nextArr = isChecked ? arr.filter((item) => item !== taskId) : [...arr, taskId]
+      return { ...current, day7RevisionTasks: nextArr }
+    })
+  }
+
+  const resetProblemStatus = (id: string) => {
+    setState((current) => {
+      const dates = { ...(current.completionDates || {}) }
+      delete dates[id]
+      return {
+        ...current,
+        completed: (current.completed || []).filter((item) => item !== id),
+        solvedIndependently: (current.solvedIndependently || []).filter((item) => item !== id),
+        mistakes: (current.mistakes || []).filter((item) => item !== id),
+        completionDates: dates,
+      }
+    })
+  }
+
   const saveNote = (id: string, text: string) => setState((current) => ({ ...current, notes: { ...current.notes, [id]: text } }))
   const updateLeetcodeUsername = (username: string) => setState((current) => ({ ...current, leetcodeUsername: username }))
 
@@ -138,7 +214,7 @@ function useProgress() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  return { state, toggle, saveNote, updateLeetcodeUsername }
+  return { state, toggle, saveNote, updateLeetcodeUsername, toggleIndependent, toggleMistake, toggleDay7Task, resetProblemStatus }
 }
 
 function Logo({ onClick }: { onClick?: () => void }) {
@@ -189,6 +265,7 @@ function Header({ theme, setTheme, onMenu, view, navigate, solved }: { theme: st
       <nav className="desktop-nav" aria-label="Main navigation">
         <button className={view === 'home' ? 'active' : ''} onClick={() => navigate('home')}>Explore</button>
         <button onClick={() => { navigate('home'); setTimeout(() => document.getElementById('sheets')?.scrollIntoView(), 50) }}>Sheets</button>
+        <button className={view === 'roadmap' ? 'active' : ''} onClick={() => navigate('roadmap')}>7-Day Roadmap</button>
         <button className={view === 'all' ? 'active' : ''} onClick={() => navigate('all')}>All Problems</button>
         <button className={view === 'leaderboard' ? 'active' : ''} onClick={() => navigate('leaderboard')}>Leaderboard</button>
         <button className={view === 'mock' ? 'active' : ''} onClick={() => navigate('mock')}>Mock Interview</button>
@@ -231,6 +308,7 @@ function Sidebar({ open, close, view, setView }: { open: boolean; close: () => v
         <button className={view === 'leaderboard' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('leaderboard')}><Trophy size={18} /> Leaderboard</button>
         <button className={view === 'profile' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('profile')}><BarChart3 size={18} /> Profile</button>
         <p className="nav-label second">Practice</p>
+        <button className={view === 'roadmap' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('roadmap')}><Flame size={18} fill="currentColor" style={{ color: '#ff6b4a' }} /> 7-Day Roadmap <span className="new-pill">NEW</span></button>
         <a className="nav-item" href="#daily" onClick={close}><Zap size={18} /> Daily challenge <span className="new-pill">NEW</span></a>
         <button className={view === 'mock' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('mock')}><Clock3 size={18} /> Mock interview</button>
         <button className={view === 'contests' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('contests')}><CalendarDays size={18} /> Contests</button>
@@ -349,7 +427,7 @@ function DailyChallenge({ problem, done, toggle }: { problem?: Problem; done: bo
   )
 }
 
-function HomeView({ completed, onOpen, onBrowseAll }: { completed: string[]; onOpen: (sheet: Sheet) => void; onBrowseAll: () => void }) {
+function HomeView({ completed, onOpen, onBrowseAll, onOpenRoadmap }: { completed: string[]; onOpen: (sheet: Sheet) => void; onBrowseAll: () => void; onOpenRoadmap: () => void }) {
   const unique = useMemo(() => {
     const seen = new Set<string>()
     return sheets.flatMap((sheet) => sheet.problems).filter((problem) => !seen.has(problem.id) && seen.add(problem.id))
@@ -367,7 +445,8 @@ function HomeView({ completed, onOpen, onBrowseAll }: { completed: string[]; onO
           <h1>Master DSA.<br /><span>Land the offer.</span></h1>
           <p className="hero-sub">{sheets.length} legendary roadmaps, {unique.length} must-do problems, and one tracker that keeps your progress in sync across every list.</p>
           <div className="hero-ctas">
-            <button className="hero-cta primary" onClick={() => document.getElementById('sheets')?.scrollIntoView({ behavior: 'smooth' })}>Explore roadmaps <ArrowRight size={16} /></button>
+            <button className="hero-cta primary" onClick={onOpenRoadmap}>7-Day Roadmap <Zap size={15} fill="currentColor" /></button>
+            <button className="hero-cta ghost" onClick={() => document.getElementById('sheets')?.scrollIntoView({ behavior: 'smooth' })}>Explore roadmaps <ArrowRight size={16} /></button>
             <button className="hero-cta ghost" onClick={onBrowseAll}>Browse all problems</button>
           </div>
           <div className="hero-cred">
@@ -1097,7 +1176,18 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [view, setView] = useState<View>('home')
   const [activeSheet, setActiveSheet] = useState<Sheet | null>(null)
-  const { state: progress, toggle, saveNote, updateLeetcodeUsername } = useProgress()
+  const {
+    state: progress,
+    toggle,
+    saveNote,
+    updateLeetcodeUsername,
+    toggleIndependent,
+    toggleMistake,
+    toggleDay7Task,
+    resetProblemStatus,
+  } = useProgress()
+
+  const allProblems = useMemo(() => sheets.flatMap((s) => s.problems), [])
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('dsagrind-theme', theme) }, [theme])
   useEffect(() => {
@@ -1113,7 +1203,19 @@ export default function App() {
     <div className="app-shell">
       <Header theme={theme} setTheme={setTheme} onMenu={() => setSidebarOpen(true)} view={view} navigate={changeView} solved={progress.completed.length} />
       <Sidebar open={sidebarOpen} close={() => setSidebarOpen(false)} view={view} setView={changeView} />
-      {view === 'home' && <HomeView completed={progress.completed} onOpen={openSheet} onBrowseAll={() => changeView('all')} />}
+      {view === 'home' && <HomeView completed={progress.completed} onOpen={openSheet} onBrowseAll={() => changeView('all')} onOpenRoadmap={() => changeView('roadmap')} />}
+      {view === 'roadmap' && (
+        <RoadmapView
+          allProblems={allProblems}
+          progress={progress}
+          toggleComplete={(id) => toggle('completed', id)}
+          toggleIndependent={toggleIndependent}
+          toggleMistake={toggleMistake}
+          toggleDay7Task={toggleDay7Task}
+          resetProblemStatus={resetProblemStatus}
+          saveNote={saveNote}
+        />
+      )}
       {view === 'sheet' && activeSheet && <SheetView sheet={activeSheet} progress={progress} toggle={toggle} saveNote={saveNote} onBack={() => changeView('home')} />}
       {view === 'all' && <AllProblemsView progress={progress} toggle={toggle} saveNote={saveNote} />}
       {view === 'leaderboard' && <LeaderboardView />}

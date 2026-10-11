@@ -30,4 +30,24 @@ export interface ProgressState {
   notes: Record<string, string>
   completionDates?: Record<string, string>
   leetcodeUsername?: string
+  solvedIndependently?: string[]
+  mistakes?: string[]
+  day7RevisionTasks?: string[]
+}
+
+export interface RoadmapRevisionTask {
+  id: string
+  task: string
+  completed?: boolean
+}
+
+export interface RoadmapDayConfig {
+  day: number
+  title: string
+  priority?: string
+  patterns: string[]
+  revisionTarget: string
+  problemSlugs?: string[]
+  problems?: Problem[]
+  revisionTasks?: RoadmapRevisionTask[]
 }

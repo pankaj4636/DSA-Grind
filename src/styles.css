@@ -3991,3 +3991,823 @@ footer span:last-child {
   color: #ff4d4f;
   border-color: #ff4d4f;
 }
+
+/* ==========================================================================
+   7-DAY DSA PATTERN MASTERY ROADMAP STYLES
+   ========================================================================== */
+
+.roadmap-page {
+  padding-top: 36px;
+}
+
+/* Hero Section */
+.roadmap-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
+  align-items: center;
+  margin-bottom: 50px;
+}
+
+.roadmap-hero-content {
+  animation: heroRise .5s ease both;
+}
+
+.roadmap-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.roadmap-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--violet) 12%, transparent);
+  color: var(--violet);
+  border-radius: 999px;
+  font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.roadmap-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font: 600 11px 'DM Sans', sans-serif;
+  border: 1px solid var(--border);
+}
+
+.roadmap-title {
+  font: 800 clamp(32px, 4.2vw, 52px)/1.08 'Manrope', sans-serif;
+  letter-spacing: -2px;
+  margin: 0 0 14px;
+}
+
+.roadmap-title span {
+  background: linear-gradient(110deg, #8b74f0, #6d55dd 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.roadmap-subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 540px;
+  margin: 0 0 24px;
+}
+
+.roadmap-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Hero Progress Gauge Card */
+.roadmap-progress-gauge-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 26px;
+  box-shadow: var(--slab);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: hidden;
+  animation: heroRise .6s ease both;
+}
+
+.roadmap-progress-gauge-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--violet), #8b74f0);
+}
+
+.gauge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gauge-header span {
+  font: 700 11px ui-monospace, SFMono-Regular, monospace;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.gauge-header strong {
+  font: 800 28px 'Manrope', sans-serif;
+  color: var(--violet);
+  letter-spacing: -1px;
+}
+
+.gauge-track-wrap {
+  width: 100%;
+  height: 10px;
+  background: var(--surface-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.gauge-track-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b74f0, #5741c5);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.gauge-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.gauge-stat-item {
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.gauge-stat-item span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.gauge-stat-item strong {
+  font: 700 16px 'Manrope', sans-serif;
+  color: var(--text);
+}
+
+.gauge-stat-item strong sub {
+  font-size: 11px;
+  color: var(--faint);
+  font-weight: 500;
+  bottom: 0;
+}
+
+.gauge-current-day-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--violet) 8%, var(--surface-soft));
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.current-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--violet) 30%, transparent);
+}
+
+.gauge-current-day-strip small {
+  color: var(--muted);
+}
+
+/* 2. Daily Study Schedule */
+.roadmap-routine-section {
+  margin-bottom: 45px;
+}
+
+.roadmap-routine-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.routine-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 18px;
+  box-shadow: var(--slab);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.routine-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--violet) 40%, var(--border));
+  box-shadow: var(--slab-hi);
+}
+
+.routine-card-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--violet) 18%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.routine-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.routine-step-num {
+  font: 700 10px ui-monospace, monospace;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.routine-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: var(--surface-soft);
+  border-radius: 6px;
+  font: 700 10.5px 'DM Sans', sans-serif;
+  color: var(--violet);
+}
+
+.routine-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--violet) 10%, var(--surface-soft));
+  color: var(--violet);
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+
+.routine-card h3 {
+  font: 700 15px 'Manrope', sans-serif;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.routine-card p {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* 5. Re-solve Mistakes Queue Section */
+.roadmap-mistakes-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  margin-bottom: 45px;
+  overflow: hidden;
+  box-shadow: var(--slab);
+}
+
+.mistakes-section-header {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: color-mix(in srgb, #ff6b4a 6%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, #ff6b4a 20%, var(--border));
+}
+
+.mistakes-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.flame-icon-ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #ff6b4a 16%, var(--surface));
+  color: #ff6b4a;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.mistakes-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mistakes-heading-row h2 {
+  font: 700 17px 'Manrope', sans-serif;
+  margin: 0;
+  color: var(--text);
+}
+
+.mistake-count-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #ff6b4a 18%, var(--surface));
+  color: #e04b28;
+  font: 700 11px ui-monospace, monospace;
+}
+
+.mistakes-title-wrap p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mistakes-content {
+  padding: 16px 20px 20px;
+}
+
+.mistakes-empty {
+  padding: 40px 20px;
+}
+
+/* 3. Exact Seven-Day Roadmap Timeline */
+.roadmap-schedule-section {
+  margin-bottom: 60px;
+}
+
+.schedule-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.schedule-toolbar h2 {
+  font: 800 24px 'Manrope', sans-serif;
+  margin: 4px 0 0;
+}
+
+.toolbar-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.roadmap-btn.ghost-sm {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: 600 12px 'Manrope', sans-serif;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roadmap-btn.ghost-sm:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+  border-color: var(--violet);
+}
+
+.roadmap-days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.roadmap-day-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--slab);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.roadmap-day-card.day-active {
+  border-color: color-mix(in srgb, var(--violet) 50%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--violet) 35%, transparent), var(--slab);
+}
+
+.roadmap-day-card.day-complete {
+  border-color: color-mix(in srgb, #35a978 40%, var(--border));
+}
+
+.day-card-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: var(--surface);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.day-card-header:hover {
+  background: color-mix(in srgb, var(--surface-soft) 50%, var(--surface));
+}
+
+.day-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.day-number-pill {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--violet-soft);
+  color: var(--violet);
+  font: 800 11px ui-monospace, monospace;
+  letter-spacing: 0.5px;
+}
+
+.day-complete .day-number-pill {
+  background: color-mix(in srgb, #35a978 15%, transparent);
+  color: #27855e;
+}
+
+.priority-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #ff6b4a 15%, transparent);
+  color: #e04b28;
+  font: 700 10.5px 'Manrope', sans-serif;
+}
+
+.day-title {
+  font: 700 17px 'Manrope', sans-serif;
+  margin: 0;
+  color: var(--text);
+}
+
+.day-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.day-progress-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.day-progress-bar-wrap {
+  width: 90px;
+  height: 6px;
+  background: var(--surface-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.day-progress-bar-fill {
+  height: 100%;
+  background: var(--violet);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.day-complete .day-progress-bar-fill {
+  background: #35a978;
+}
+
+.day-progress-text {
+  font: 600 11px ui-monospace, monospace;
+  color: var(--muted);
+}
+
+.day-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font: 700 11px 'Manrope', sans-serif;
+}
+
+.day-status-pill.complete {
+  background: color-mix(in srgb, #35a978 15%, transparent);
+  color: #27855e;
+}
+
+.day-status-pill.in-progress {
+  background: color-mix(in srgb, var(--violet) 15%, transparent);
+  color: var(--violet);
+}
+
+.day-status-pill.upcoming {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.day-card-body {
+  border-top: 1px solid var(--border);
+  padding: 20px;
+  background: var(--surface);
+}
+
+/* Revision Target Box */
+.revision-target-box {
+  background: color-mix(in srgb, var(--violet) 6%, var(--surface-soft));
+  border: 1px solid color-mix(in srgb, var(--violet) 22%, var(--border));
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.target-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 11px ui-monospace, monospace;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 4px;
+}
+
+.target-text {
+  font: 500 13px 'DM Sans', sans-serif;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Pattern Tags */
+.day-patterns-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.patterns-label {
+  font: 700 11px ui-monospace, monospace;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pattern-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.roadmap-pattern-chip {
+  padding: 3px 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: 600 11px 'DM Sans', sans-serif;
+  color: var(--muted);
+}
+
+/* Day 7 Checklist Tasks */
+.day7-checklist-section {
+  padding: 10px 0;
+}
+
+.checklist-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.checklist-subhead h4 {
+  font: 700 15px 'Manrope', sans-serif;
+  margin: 0;
+  color: var(--text);
+}
+
+.checklist-count {
+  font: 700 12px ui-monospace, monospace;
+  color: var(--violet);
+}
+
+.checklist-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.day7-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day7-task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.day7-task-row:hover {
+  border-color: color-mix(in srgb, var(--violet) 40%, var(--border));
+  background: color-mix(in srgb, var(--violet-soft) 40%, var(--surface-soft));
+}
+
+.day7-task-row.task-checked {
+  background: color-mix(in srgb, #35a978 8%, var(--surface-soft));
+  border-color: color-mix(in srgb, #35a978 30%, var(--border));
+}
+
+.day7-task-row.task-checked .task-label {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, #35a978 60%, transparent);
+}
+
+.task-index {
+  font: 700 11px ui-monospace, monospace;
+  color: var(--faint);
+  width: 24px;
+}
+
+.task-label {
+  flex: 1;
+  font: 600 13px 'DM Sans', sans-serif;
+  color: var(--text);
+}
+
+.task-status-tag {
+  font: 600 10.5px ui-monospace, monospace;
+  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.task-checked .task-status-tag {
+  color: #27855e;
+  border-color: #35a978;
+}
+
+/* Roadmap Problem Row Interactive Controls */
+.roadmap-problem-row {
+  grid-template-columns: 28px 30px minmax(180px, 1fr) 130px 75px 30px 30px 30px 30px 30px 74px;
+}
+
+.roadmap-problem-row.flagged-mistake {
+  background: linear-gradient(90deg, color-mix(in srgb, #fff3ef 70%, var(--surface)), var(--surface) 45%);
+}
+
+[data-theme='dark'] .roadmap-problem-row.flagged-mistake {
+  background: linear-gradient(90deg, rgba(255, 107, 74, 0.08), transparent 45%);
+}
+
+.roadmap-action-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roadmap-action-btn:hover {
+  color: var(--text);
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.roadmap-action-btn.active-independent {
+  color: #8b5cf6;
+  background: color-mix(in srgb, #8b5cf6 15%, transparent);
+  border-color: color-mix(in srgb, #8b5cf6 30%, transparent);
+}
+
+.roadmap-action-btn.active-mistake {
+  color: #ff6b4a;
+  background: color-mix(in srgb, #ff6b4a 15%, transparent);
+  border-color: color-mix(in srgb, #ff6b4a 30%, transparent);
+}
+
+.problem-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.problem-badge-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.independent-pill,
+.mistake-pill {
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font: 700 9.5px 'Manrope', sans-serif;
+  line-height: 1.2;
+}
+
+.independent-pill {
+  background: color-mix(in srgb, #8b5cf6 15%, var(--surface));
+  color: #7c3aed;
+  border: 1px solid color-mix(in srgb, #8b5cf6 30%, transparent);
+}
+
+[data-theme='dark'] .independent-pill {
+  background: color-mix(in srgb, #8b5cf6 20%, transparent);
+  color: #a78bfa;
+}
+
+.mistake-pill {
+  background: color-mix(in srgb, #ff6b4a 15%, var(--surface));
+  color: #ea580c;
+  border: 1px solid color-mix(in srgb, #ff6b4a 30%, transparent);
+}
+
+[data-theme='dark'] .mistake-pill {
+  background: color-mix(in srgb, #ff6b4a 20%, transparent);
+  color: #fb923c;
+}
+
+/* Responsive Styles for Roadmap */
+@media (max-width: 1024px) {
+  .roadmap-hero {
+    grid-template-columns: 1fr;
+  }
+  .roadmap-routine-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .roadmap-routine-grid {
+    grid-template-columns: 1fr;
+  }
+  .day-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .day-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .roadmap-problem-row {
+    grid-template-columns: 28px minmax(140px, 1fr) 70px 70px;
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .roadmap-problem-row .problem-index,
+  .roadmap-problem-row .pattern-pill,
+  .roadmap-problem-row .bookmark-button,
+  .roadmap-problem-row .roadmap-action-btn:nth-child(8) {
+    display: none;
+  }
+}
